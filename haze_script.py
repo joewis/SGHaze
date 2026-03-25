@@ -121,7 +121,7 @@ html_content = f"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SG Haze Spike Detector</title>
+    <title>SG Haze Heatmap</title>
     <style>
         body {{ 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
@@ -170,7 +170,7 @@ html_content = f"""
 </head>
 <body>
     <div class="container">
-        <h1>SG PM2.5 Spike Detector</h1>
+        <h1>SG PM2.5 Haze Heatmap</h1>
 
         <div class="img-container">
             <img id="heatmap" src="haze_14d.png?t={datetime.now().timestamp()}" alt="PM2.5 Heatmap">
