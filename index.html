@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SG Haze Spike Detector</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            text-align: center; 
+            background: #f0f2f5; 
+            margin: 0; 
+            padding: 10px; 
+            color: #1c1e21;
+        }
+        .container { 
+            max-width: 600px; /* Narrower container for vertical flow */
+            margin: 10px auto; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); 
+        }
+        h1 { font-size: 1.4rem; margin-bottom: 5px; }
+        .intro-text { color: #606770; font-size: 0.85rem; margin-bottom: 15px; }
+        
+        .img-container {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        img { 
+            width: 100%; /* Image fills the container width */
+            height: auto; 
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        
+        select { 
+            padding: 12px; 
+            font-size: 16px; 
+            border-radius: 8px; 
+            border: 1px solid #ddd; 
+            background: #fff;
+            width: 100%;
+            max-width: 280px;
+        }
+        
+        .controls { margin: 15px 0; }
+        .footer { color: #8d949e; font-size: 0.75rem; margin-top: 20px; line-height: 1.4; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SG PM2.5 Spike Detector</h1>
+
+        <div class="img-container">
+            <img id="heatmap" src="haze_14d.png?t=1774410496.989214" alt="PM2.5 Heatmap">
+        </div>
+        
+        <div class="footer">
+            Last updated: 2026-03-25 11:48:16 SGT<br>
+        </div>
+    </div>
+
+    <script>
+        function updateImage() {
+            var select = document.getElementById('timeframe');
+            var img = document.getElementById('heatmap');
+            img.src = select.value + '?t=' + new Date().getTime();
+        }
+    </script>
+</body>
+</html>
