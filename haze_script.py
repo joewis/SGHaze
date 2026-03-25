@@ -5,21 +5,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from datetime import datetime, timedelta
 import matplotlib.gridspec as gridspec
-from datetime import datetime, timedelta
-import pytz
-
-# Define the Singapore Timezone
-sg_tz = pytz.timezone('Asia/Singapore')
-
-# --- 1. FIND THE ANCHOR (Latest Available Data) ---
-# When getting "now", always use the SG timezone
-now_sg = datetime.now(sg_tz)
-
-# If falling back to system time for the anchor:
-anchor_time = pd.Timestamp.now(tz='Asia/Singapore')
-
-last_updated_str = now_sg.strftime("%Y-%m-%d %H:%M:%S")
-now_ts = int(now_sg.timestamp())
 
 # --- 1. FIND THE ANCHOR (Latest Available Data) ---
 print("Checking API for the latest available data point...")
@@ -29,10 +14,11 @@ try:
     # The API returns an array in 'items', get the first one
     latest_item = res.get('data', {}).get('items', [])[0]
     anchor_time = pd.to_datetime(latest_item.get('timestamp'))
+    last_updated_str = latest_item.get('updatedTimestamp', anchor_time)
     print(f"Anchor Time found: {anchor_time}")
 except Exception as e:
-    print(f"Could not fetch latest. Falling back to system time. Error: {e}")
-    anchor_time = pd.Timestamp.now(tz='Asia/Singapore')
+    print(f"Could not fetch latest. Error: {e}")
+    raise
 
 # --- 2. FETCH HISTORICAL DATA ---
 # Based on the anchor, we need the last 7 days of dates
@@ -187,14 +173,12 @@ html_content = f"""
         <h1>SG PM2.5 Haze Heatmap</h1>
 
         <div class="img-container">
-            <img id="heatmap" src="haze_14d.png?t={datetime.now().timestamp()}" alt="PM2.5 Heatmap">
+            <img id="heatmap" src="haze_14d.png" alt="PM2.5 Heatmap">
         </div>
         
         <div class="footer">
-            <div class="footer">
-                Last updated: {last_updated_str} SGT<br>
-                Data provided by NEA via data.gov.sg
-        </div>
+            Last updated: {last_updated_str}<br>
+            Data provided by NEA via data.gov.sg
         </div>
     </div>
 
