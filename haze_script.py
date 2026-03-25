@@ -57,7 +57,7 @@ df_master = df_master.sort_values('timestamp').drop_duplicates('timestamp')
 
 df = df_master
 
-regions = ['north', 'south', 'east', 'west', 'central']
+regions = ['west', 'north', 'central', 'south', 'east']
 heatmap_data = df.set_index('timestamp')[regions].T
 clean_labels = [t.strftime('%d %b %H:%M') for t in heatmap_data.columns]
 
