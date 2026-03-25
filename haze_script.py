@@ -5,6 +5,21 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from datetime import datetime, timedelta
 import matplotlib.gridspec as gridspec
+from datetime import datetime, timedelta
+import pytz
+
+# Define the Singapore Timezone
+sg_tz = pytz.timezone('Asia/Singapore')
+
+# --- 1. FIND THE ANCHOR (Latest Available Data) ---
+# When getting "now", always use the SG timezone
+now_sg = datetime.now(sg_tz)
+
+# If falling back to system time for the anchor:
+anchor_time = pd.Timestamp.now(tz='Asia/Singapore')
+
+last_updated_str = now_sg.strftime("%Y-%m-%d %H:%M:%S")
+now_ts = int(now_sg.timestamp())
 
 # --- 1. FIND THE ANCHOR (Latest Available Data) ---
 print("Checking API for the latest available data point...")
@@ -13,7 +28,7 @@ try:
     res = requests.get(latest_url, timeout=10).json()
     # The API returns an array in 'items', get the first one
     latest_item = res.get('data', {}).get('items', [])[0]
-    anchor_time = pd.to_datetime(latest_item.get('timestamp'))
+    #anchor_time = pd.to_datetime(latest_item.get('timestamp'))
     print(f"Anchor Time found: {anchor_time}")
 except Exception as e:
     print(f"Could not fetch latest. Falling back to system time. Error: {e}")
@@ -177,7 +192,10 @@ html_content = f"""
         </div>
         
         <div class="footer">
-            Last updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT<br>
+            <div class="footer">
+                Last updated: {last_updated_str} SGT<br>
+                Data provided by NEA via data.gov.sg
+        </div>
         </div>
     </div>
 
