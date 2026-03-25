@@ -78,7 +78,6 @@ def generate_vertical_heatmap(days, filename):
     if df.empty or len(df) < 2:
         return
 
-    regions = ['north', 'central', 'south', 'west', 'east']
     heatmap_data = df.set_index('timestamp')[regions]
     y_labels = [t.strftime('%a %H:%M') for t in heatmap_data.index]
 
