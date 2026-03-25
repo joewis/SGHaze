@@ -28,7 +28,7 @@ try:
     res = requests.get(latest_url, timeout=10).json()
     # The API returns an array in 'items', get the first one
     latest_item = res.get('data', {}).get('items', [])[0]
-    #anchor_time = pd.to_datetime(latest_item.get('timestamp'))
+    anchor_time = pd.to_datetime(latest_item.get('timestamp'))
     print(f"Anchor Time found: {anchor_time}")
 except Exception as e:
     print(f"Could not fetch latest. Falling back to system time. Error: {e}")
