@@ -65,7 +65,8 @@ def generate_vertical_heatmap(days, filename):
         return
 
     heatmap_data = df.set_index('timestamp')[regions]
-    y_labels = [t.strftime('%a %H:%M') for t in heatmap_data.index]
+    # Include date in the label to distinguish between different days
+    y_labels = [t.strftime('%a %d/%m %H:%M') for t in heatmap_data.index]
 
     # --- LINEAR SCALING: 0.28 inches per row + 3 inches for headers ---
     row_height = 0.28
@@ -103,7 +104,7 @@ def generate_vertical_heatmap(days, filename):
     
     # --- FIX 2: Formatting cleanup ---
     plt.setp(ax.get_xticklabels(), fontsize=13, fontweight='bold')
-    plt.setp(ax.get_yticklabels(), fontsize=10, rotation=0)
+    plt.setp(ax.get_yticklabels(), fontsize=8, rotation=0)
     
     # Remove 'tight_layout' as it breaks GridSpec ratios; use bbox_inches instead
     plt.savefig(filename, dpi=110, bbox_inches='tight')
