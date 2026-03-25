@@ -35,7 +35,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add haze_7d.png index.html
+          git add haze_14d.png index.html
           git commit -m "Hourly haze update: $(date)" || echo "no_changes=true" >> $GITHUB_OUTPUT
           git push
 
