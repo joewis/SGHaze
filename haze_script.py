@@ -9,6 +9,8 @@ import time
 
 #pd.set_option('display.max_rows', None)
 
+d=14 #number of days to pull
+
 # --- 1. FIND THE ANCHOR (Latest Available Data) ---
 print("Checking API for the latest available data point...")
 latest_url = "https://api-open.data.gov.sg/v2/real-time/api/pm25"
@@ -24,8 +26,8 @@ except Exception as e:
     raise
 
 # --- 2. FETCH HISTORICAL DATA ---
-# Based on the anchor, we need the last 7 days of dates
-dates_to_fetch = [(anchor_time - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(14)]
+# Based on the anchor, we need the last d days of dates
+dates_to_fetch = [(anchor_time - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(d)]
 
 all_data = []
 for date_str in set(dates_to_fetch): # Use set to avoid duplicates if anchor is near midnight
@@ -46,6 +48,8 @@ for date_str in set(dates_to_fetch): # Use set to avoid duplicates if anchor is 
 df_master = pd.DataFrame(all_data)
 df_master['timestamp'] = pd.to_datetime(df_master['timestamp'])
 df_master = df_master.sort_values('timestamp').drop_duplicates('timestamp')
+
+df=df_master.copy()
 
 regions = ['west', 'north', 'central', 'south', 'east']
 heatmap_data = df.set_index('timestamp')[regions].T
@@ -115,6 +119,7 @@ def generate_vertical_heatmap(days, filename):
 
 # --- EXECUTION ---
 #for d in [14]:
+
 generate_vertical_heatmap(d, f'haze_{d}d.png')
 #    print(f"Generated vertical haze_{d}d.png (Newest first)")
     
@@ -177,7 +182,7 @@ html_content = f"""
         <h1>SG PM2.5 Haze Heatmap</h1>
 
         <div class="img-container">
-            <img id="heatmap" src="haze_14d.png" alt="PM2.5 Heatmap">
+            <img id="heatmap" src="haze_{d}d.png" alt="PM2.5 Heatmap">
         </div>
         
         <div class="footer">
