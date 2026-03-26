@@ -210,6 +210,18 @@ class DataProcessor:
 class HeatmapGenerator:
     """Handles heatmap visualization generation."""
     
+    # PM2.5 level thresholds with corresponding colors and labels
+    # Format: (threshold_value, color_hex, label)
+    PM25_LEVELS = [
+        (0, "#228B22", "Good"),
+        (12, "#66DD00", "Moderate"),
+        (35, "#FFFF00", "Moderate"),
+        (75, "#FF8800", "Unhealthy"),
+        (150, "#FF0000", "Unhealthy"),
+        (250, "#800080", "Hazardous"),
+        (300, "#800000", "Hazardous")
+    ]
+    
     def __init__(self, config: Config):
         self.config = config
         self.colormap = self._create_colormap()
@@ -218,15 +230,30 @@ class HeatmapGenerator:
         """Create custom colormap for PM2.5 levels."""
         vmax = self.config.vmax_pm25
         anchors = [
-            (0/vmax,   "#228B22"),
-            (12/vmax,  "#66DD00"),
-            (35/vmax,  "#FFFF00"),
-            (75/vmax,  "#FF8800"),
-            (150/vmax, "#FF0000"),
-            (250/vmax, "#800080"),
-            (300/vmax, "#800000")
+            (threshold/vmax, color)
+            for threshold, color, _ in self.PM25_LEVELS
         ]
         return LinearSegmentedColormap.from_list("SG_Haze_Scale", anchors)
+    
+    @staticmethod
+    def get_legend_colors() -> list[tuple[str, str]]:
+        """
+        Get unique color-label pairs for the legend.
+        
+        Returns:
+            List of (color_hex, label) tuples for legend display
+        """
+        # Select representative colors for each category
+        # Using specific thresholds that best represent each level
+        legend_mapping = {
+            "Good": "#228B22",      # 0 - Forest Green
+            "Moderate": "#FFFF00",  # 35 - Yellow (most recognizable for moderate)
+            "Unhealthy": "#FF0000", # 150 - Red (most recognizable for unhealthy)
+            "Hazardous": "#800080"  # 250 - Purple
+        }
+        # Return in order of PM2.5 levels
+        return [(legend_mapping[label], label) for label in 
+                ["Good", "Moderate", "Unhealthy", "Hazardous"]]
     
     def generate_vertical_heatmap(
         self,
@@ -340,6 +367,13 @@ class HTMLGenerator:
         """
         logger.info(f"Generating HTML page: {output_path}")
         
+        # Get legend colors from HeatmapGenerator to ensure consistency
+        legend_items = HeatmapGenerator.get_legend_colors()
+        legend_html = "".join(
+            f'<span><span class="dot" style="background:{color}"></span>{label}</span>'
+            for color, label in legend_items
+        )
+        
 # Create a current status indicator (optional: pass the latest central reading to this function)
 # For now, we'll use a clean, responsive CSS layout.
 
@@ -421,10 +455,7 @@ class HTMLGenerator:
                             <div class="header">
                                 <h1>🇸🇬 PM2.5 Hourly Tracker</h1>
                                 <div class="legend-bar">
-                                    <span><span class="dot" style="background:#228B22"></span>Good</span>
-                                    <span><span class="dot" style="background:#FFFF00"></span>Moderate</span>
-                                    <span><span class="dot" style="background:#FF0000"></span>Unhealthy</span>
-                                    <span><span class="dot" style="background:#800080"></span>Hazard</span>
+                                    {legend_html}
                                 </div>
                             </div>
                         
