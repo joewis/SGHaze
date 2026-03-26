@@ -39,7 +39,7 @@ class Config:
     # API settings
     api_base_url: str = "https://api-open.data.gov.sg/v2/real-time/api/pm25"
     api_timeout: int = 10
-    api_delay_between_requests: float = 3.0
+    api_delay_between_requests: float = 5.0
     
     # Visualization settings
     regions: list = None
@@ -340,83 +340,109 @@ class HTMLGenerator:
         """
         logger.info(f"Generating HTML page: {output_path}")
         
-        html_content = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SG Haze Heatmap</title>
-    <style>
-        body {{ 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            text-align: center; 
-            background: #f0f2f5; 
-            margin: 0; 
-            padding: 10px; 
-            color: #1c1e21;
-        }}
-        .container {{ 
-            max-width: 600px;
-            margin: 10px auto; 
-            background: white; 
-            padding: 15px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08); 
-        }}
-        h1 {{ font-size: 1.4rem; margin-bottom: 5px; }}
-        .intro-text {{ color: #606770; font-size: 0.85rem; margin-bottom: 15px; }}
-        
-        .img-container {{
-            width: 100%;
-            margin-top: 10px;
-        }}
+# Create a current status indicator (optional: pass the latest central reading to this function)
+# For now, we'll use a clean, responsive CSS layout.
 
-        img {{ 
-            width: 100%;
-            height: auto; 
-            border-radius: 8px;
-            border: 1px solid #eee;
-        }}
-        
-        select {{ 
-            padding: 12px; 
-            font-size: 16px; 
-            border-radius: 8px; 
-            border: 1px solid #ddd; 
-            background: #fff;
-            width: 100%;
-            max-width: 280px;
-        }}
-        
-        .controls {{ margin: 15px 0; }}
-        .footer {{ color: #8d949e; font-size: 0.75rem; margin-top: 20px; line-height: 1.4; padding-bottom: 10px; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>SG PM2.5 Haze Heatmap</h1>
-
-        <div class="img-container">
-            <img id="heatmap" src="{image_filename}" alt="PM2.5 Heatmap">
-        </div>
-        
-        <div class="footer">
-            Last updated: {last_updated}<br>
-            Data provided by NEA via data.gov.sg
-        </div>
-    </div>
-
-    <script>
-        function updateImage() {{
-            var select = document.getElementById('timeframe');
-            var img = document.getElementById('heatmap');
-            img.src = select.value + '?t=' + new Date().getTime();
-        }}
-    </script>
-</body>
-</html>
-"""
+        html_content = f"""<!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                            <title>SG Haze Tracker</title>
+                            <style>
+                                :root {{
+                                    --bg-color: #f8f9fa;
+                                    --card-bg: #ffffff;
+                                    --text-main: #1a1a1a;
+                                    --text-muted: #6c757d;
+                                    --accent: #007bff;
+                                }}
+                                @media (prefers-color-scheme: dark) {{
+                                    :root {{
+                                        --bg-color: #121212;
+                                        --card-bg: #1e1e1e;
+                                        --text-main: #e9ecef;
+                                        --text-muted: #a0a0a0;
+                                    }}
+                                }}
+                                body {{ 
+                                    font-family: -apple-system, system-ui, sans-serif; 
+                                    background: var(--bg-color); 
+                                    color: var(--text-main);
+                                    margin: 0; padding: 0; 
+                                    line-height: 1.5;
+                                }}
+                                .header {{
+                                    background: var(--card-bg);
+                                    padding: 16px;
+                                    position: sticky;
+                                    top: 0;
+                                    z-index: 100;
+                                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                                    border-bottom: 1px solid rgba(0,0,0,0.1);
+                                }}
+                                h1 {{ font-size: 1.25rem; margin: 0; font-weight: 700; letter-spacing: -0.5px; }}
+                                .status-pill {{
+                                    display: inline-block;
+                                    padding: 4px 12px;
+                                    border-radius: 20px;
+                                    background: #e7f3ff;
+                                    color: #007bff;
+                                    font-size: 0.75rem;
+                                    font-weight: 600;
+                                    margin-top: 8px;
+                                }}
+                                .container {{ max-width: 800px; margin: 0 auto; padding: 10px; }}
+                                .img-card {{ 
+                                    background: var(--card-bg); 
+                                    border-radius: 16px; 
+                                    overflow: hidden; 
+                                    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+                                    margin-top: 10px;
+                                }}
+                                img {{ width: 100%; height: auto; display: block; }}
+                                .footer {{ 
+                                    padding: 30px 20px; 
+                                    font-size: 0.75rem; 
+                                    color: var(--text-muted); 
+                                    text-align: center; 
+                                }}
+                                .legend-bar {{
+                                    display: flex;
+                                    justify-content: space-between;
+                                    margin-top: 12px;
+                                    font-size: 0.7rem;
+                                    font-weight: 500;
+                                }}
+                                .dot {{ height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }}
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>🇸🇬 PM2.5 Hourly Tracker</h1>
+                                <div class="status-pill">● Live Updates (Hourly)</div>
+                                <div class="legend-bar">
+                                    <span><span class="dot" style="background:#228B22"></span>Good</span>
+                                    <span><span class="dot" style="background:#FFFF00"></span>Moderate</span>
+                                    <span><span class="dot" style="background:#FF8800"></span>Unhealthy</span>
+                                    <span><span class="dot" style="background:#FF0000"></span>Hazard</span>
+                                </div>
+                            </div>
+                        
+                            <div class="container">
+                                <div class="img-card">
+                                    <img src="{image_filename}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">
+                                </div>
+                                
+                                <div class="footer">
+                                    <strong>Data Source:</strong> National Environment Agency<br>
+                                    <strong>Last Sync:</strong> {last_updated}<br>
+                                    <p style="opacity: 0.6">Vertical view displays 7 days of historical trends.</p>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                        """
         
         try:
             with open(output_path, "w", encoding='utf-8') as f:
