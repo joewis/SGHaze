@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from datetime import datetime, timedelta
 import matplotlib.gridspec as gridspec
+import time
+
+#pd.set_option('display.max_rows', None)
 
 # --- 1. FIND THE ANCHOR (Latest Available Data) ---
 print("Checking API for the latest available data point...")
@@ -27,6 +30,8 @@ dates_to_fetch = [(anchor_time - timedelta(days=i)).strftime('%Y-%m-%d') for i i
 all_data = []
 for date_str in set(dates_to_fetch): # Use set to avoid duplicates if anchor is near midnight
     url = f"https://api-open.data.gov.sg/v2/real-time/api/pm25?date={date_str}"
+    time.sleep(3)
+    print(url)
     try:
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
@@ -37,11 +42,10 @@ for date_str in set(dates_to_fetch): # Use set to avoid duplicates if anchor is 
                 all_data.append(row)
     except Exception as e:
         print(f"Error fetching {date_str}: {e}")
+
 df_master = pd.DataFrame(all_data)
 df_master['timestamp'] = pd.to_datetime(df_master['timestamp'])
 df_master = df_master.sort_values('timestamp').drop_duplicates('timestamp')
-
-df = df_master
 
 regions = ['west', 'north', 'central', 'south', 'east']
 heatmap_data = df.set_index('timestamp')[regions].T
@@ -110,9 +114,9 @@ def generate_vertical_heatmap(days, filename):
     plt.close()
 
 # --- EXECUTION ---
-for d in [14]:
-    generate_vertical_heatmap(d, f'haze_{d}d.png')
-    print(f"Generated vertical haze_{d}d.png (Newest first)")
+#for d in [14]:
+generate_vertical_heatmap(d, f'haze_{d}d.png')
+#    print(f"Generated vertical haze_{d}d.png (Newest first)")
     
 # --- 5. CREATE THE WEBPAGE (CLEAN VERTICAL VERSION) ---
 html_content = f"""
