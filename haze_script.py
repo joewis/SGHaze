@@ -423,7 +423,7 @@ class HTMLGenerator:
                                 <div class="legend-bar">
                                     <span><span class="dot" style="background:#228B22"></span>Good</span>
                                     <span><span class="dot" style="background:#FFFF00"></span>Moderate</span>
-                                    <span><span class="dot" style="background:#FF8800"></span>Unhealthy</span>
+                                    <span><span class="dot" style="background:#FF0000"></span>Unhealthy</span>
                                     <span><span class="dot" style="background:#800080"></span>Hazard</span>
                                 </div>
                             </div>
