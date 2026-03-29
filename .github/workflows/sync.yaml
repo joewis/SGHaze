@@ -28,6 +28,15 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add sg_haze.db
-          git commit -m "Automated Haze Sync: $(date -u)" || exit 0
-          git push
+          
+          # 1. Pull latest changes to avoid the 'rejected' error
+          git pull --rebase origin main
+          
+          # 2. Add files (using -f to bypass any .gitignore issues)
+          git add -f haze_latest.png index.html sg_haze.db
+          
+          # 3. Commit only if there are actual changes
+          git commit -m "Hourly haze update: $(date)" || echo "No changes to commit"
+          
+          # 4. Push back to main
+          git push origin main
