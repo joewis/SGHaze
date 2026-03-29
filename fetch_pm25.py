@@ -4,11 +4,14 @@ import time
 import pandas as pd
 from datetime import datetime, timedelta
 import pytz
+import os
+from pathlib import Path
 
 # --- Configuration ---
-DB_NAME = "sg_haze.db"
 API_URL = "https://api-open.data.gov.sg/v2/real-time/api/pm25"
 SG_TZ = pytz.timezone('Asia/Singapore')
+BASE_DIR = Path(__file__).resolve().parent
+DB_NAME = BASE_DIR / "sg_haze.db"
 
 def get_latest_timestamp():
     """Finds the most recent entry in the DB to avoid redundant pulls."""
