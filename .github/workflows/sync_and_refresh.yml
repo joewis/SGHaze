@@ -1,6 +1,7 @@
+---
 name: Haze Sync and Refresh
 
-on:
+"on":
   schedule:
     - cron: '47 * * * *'
   workflow_dispatch:
@@ -23,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0 # Important for --amend: fetches full history
+          fetch-depth: 0  # Important for --amend: fetches full history
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,20 +45,22 @@ jobs:
       - name: Force-Update Single Commit
         id: commit_step
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.email \
+            "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
+
           # Add all assets
           git add -f haze_latest.png index.html sg_haze.db
-          
+
           # Check if there are actual changes before proceeding
           if git diff --cached --quiet; then
             echo "No changes detected. Skipping push."
             echo "changes=false" >> $GITHUB_OUTPUT
           else
-            # 1. Amend the last commit with the new data
-            # 2. Force push to keep the repo at a single "Latest Update" commit
-            git commit --amend --no-edit || git commit -m "Automated Haze Update"
+            # Amend the last commit with the new data
+            # Force push to keep the repo at a single "Latest Update" commit
+            git commit --amend --no-edit \
+              || git commit -m "Automated Haze Update"
             git push origin main --force
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
