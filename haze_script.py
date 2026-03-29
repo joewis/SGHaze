@@ -183,8 +183,8 @@ class HTMLGenerator:
         table_html = f'''
         <div class="table-container">
             <table class="data-table">
-                {header_row}
-                {''.join(rows)}
+                <thead>{header_row}</thead>
+                <tbody>{''.join(rows)}</tbody>
             </table>
         </div>
         '''
@@ -214,10 +214,12 @@ class HTMLGenerator:
                 .legend {{ display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 0.8rem; font-weight: 600; flex-wrap: wrap; }}
                 .item {{ display: flex; align-items: center; gap: 5px; }}
                 .dot {{ height: 10px; width: 10px; border-radius: 50%; }}
-                .table-container {{ margin-top: 20px; overflow-x: auto; }}
+                .table-container {{ margin-top: 20px; overflow-x: auto; max-height: 70vh; overflow-y: auto; }}
                 .data-table {{ border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 0.9rem; table-layout: fixed; }}
                 .data-table th, .data-table td {{ padding: 4px; text-align: center; font-weight: bold; }}
                 .data-table th:first-child, .data-table td:first-child {{ text-align: left; white-space: nowrap; font-size: 0.75rem; width: 110px; }}
+                .data-table thead th {{ position: sticky; top: 0; z-index: 10; background-color: #333; color: white; }}
+                .footer-fixed {{ position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #eee; padding: 10px; font-size: 0.85rem; color: #65676b; text-align: center; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }}
                 @media (max-width: 600px) {{
                     .card {{ padding: 10px; }}
                     h1 {{ font-size: 1.2rem; }}
@@ -241,11 +243,11 @@ class HTMLGenerator:
                 <!--img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap"-->
                 <!--h2>📊 Data Table</h2-->
                 {table_html}
-                <div class="meta">
-                    <strong>Source:</strong> data.gov.sg API<br>
-                    <strong>Data Freshness:</strong> {last_ts_str} (SGT)<br>
-                    Generated via GitHub Actions
-                </div>
+            </div>
+            <div class="footer-fixed">
+                <strong>Source:</strong> data.gov.sg API<br>
+                <strong>Data Freshness:</strong> {last_ts_str} (SGT)<br>
+                Generated via GitHub Actions
             </div>
         </body>
         </html>
