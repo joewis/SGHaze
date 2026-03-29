@@ -172,7 +172,7 @@ class HTMLGenerator:
                 r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
                 luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
                 text_color = "#ffffff" if luminance < 0.5 else "#000000"
-                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 4px 2px; min-width: 45px;">{value:.0f}</td>')
+                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 4px 2px; min-width: 40px;">{value:.0f}</td>')
             
             rows.append(f'<tr><td style="font-weight: bold; padding: 4px; white-space: nowrap; font-size: 0.75rem;">{time_label}</td>' + ''.join(cells) + '</tr>')
         
