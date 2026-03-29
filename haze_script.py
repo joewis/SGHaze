@@ -218,19 +218,19 @@ class HTMLGenerator:
                 r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
                 luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
                 text_color = "#ffffff" if luminance < 0.5 else "#000000"
-                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 8px;">{value:.0f}</td>')
+                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 4px 2px; min-width: 45px;">{value:.0f}</td>')
             
-            rows.append(f'<tr><td style="font-weight: bold; padding: 8px; white-space: nowrap;">{time_label}</td>' + ''.join(cells) + '</tr>')
+            rows.append(f'<tr><td style="font-weight: bold; padding: 4px; white-space: nowrap; font-size: 0.75rem;">{time_label}</td>' + ''.join(cells) + '</tr>')
         
         # Build header row
-        header_cells = [f'<th style="padding: 10px; background-color: #333; color: white;">Time</th>']
+        header_cells = [f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.75rem;">Time</th>']
         for region in regions:
-            header_cells.append(f'<th style="padding: 10px; background-color: #333; color: white;">{region.capitalize()}</th>')
+            header_cells.append(f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.75rem;">{region.capitalize()}</th>')
         header_row = '<tr>' + ''.join(header_cells) + '</tr>'
         
         table_html = f'''
-        <div style="overflow-x: auto; margin-top: 20px;">
-            <table style="border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 0.9rem;">
+        <div class="table-container">
+            <table class="data-table">
                 {header_row}
                 {''.join(rows)}
             </table>
@@ -262,11 +262,18 @@ class HTMLGenerator:
                 .legend {{ display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 0.8rem; font-weight: 600; flex-wrap: wrap; }}
                 .item {{ display: flex; align-items: center; gap: 5px; }}
                 .dot {{ height: 10px; width: 10px; border-radius: 50%; }}
+                .table-container {{ margin-top: 20px; overflow-x: auto; }}
+                .data-table {{ border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 0.9rem; table-layout: fixed; }}
+                .data-table th, .data-table td {{ padding: 4px; text-align: center; font-weight: bold; }}
+                .data-table th:first-child, .data-table td:first-child {{ text-align: left; white-space: nowrap; font-size: 0.75rem; width: 110px; }}
                 @media (max-width: 600px) {{
                     .card {{ padding: 10px; }}
                     h1 {{ font-size: 1.2rem; }}
                     h2 {{ font-size: 1rem; }}
                     .legend {{ gap: 10px; font-size: 0.7rem; }}
+                    .data-table {{ font-size: 0.75rem; }}
+                    .data-table th, .data-table td {{ padding: 3px 1px; min-width: 35px; }}
+                    .data-table th:first-child, .data-table td:first-child {{ width: 90px; font-size: 0.65rem; }}
                 }}
             </style>
         </head>
