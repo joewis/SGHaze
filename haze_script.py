@@ -218,19 +218,19 @@ class HTMLGenerator:
                 r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
                 luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
                 text_color = "#ffffff" if luminance < 0.5 else "#000000"
-                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 8px;">{value:.0f}</td>')
+                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 6px; min-width: 45px;">{value:.0f}</td>')
             
-            rows.append(f'<tr><td style="font-weight: bold; padding: 8px; white-space: nowrap;">{time_label}</td>' + ''.join(cells) + '</tr>')
+            rows.append(f'<tr><td style="font-weight: bold; padding: 6px; white-space: nowrap; font-size: 0.8rem;">{time_label}</td>' + ''.join(cells) + '</tr>')
         
         # Build header row
-        header_cells = [f'<th style="padding: 10px; background-color: #333; color: white;">Time</th>']
+        header_cells = [f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.8rem;">Time</th>']
         for region in regions:
-            header_cells.append(f'<th style="padding: 10px; background-color: #333; color: white;">{region.capitalize()}</th>')
+            header_cells.append(f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.8rem; min-width: 45px;">{region.capitalize()}</th>')
         header_row = '<tr>' + ''.join(header_cells) + '</tr>'
         
         table_html = f'''
-        <div style="overflow-x: auto; margin-top: 20px;">
-            <table style="border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 0.9rem;">
+        <div style="overflow-x: auto; margin-top: 20px; -webkit-overflow-scrolling: touch;">
+            <table style="border-collapse: collapse; width: auto; max-width: 100%; font-family: -apple-system, sans-serif; font-size: 0.85rem;" role="table">
                 {header_row}
                 {''.join(rows)}
             </table>
@@ -239,11 +239,16 @@ class HTMLGenerator:
         return table_html
     
     @staticmethod
-    def generate(image_path: str, last_ts_str: str, output_path: str, df: pd.DataFrame = None, regions: list = None, colormap: LinearSegmentedColormap = None, vmax: int = 250):
+    def generate(image_path: str, last_ts_str: str, output_path: str, df: pd.DataFrame = None, regions: list = None, colormap: LinearSegmentedColormap = None, vmax: int = 250, include_image: bool = True):
         # Generate the data table if dataframe is provided
         table_html = ""
         if df is not None and regions is not None and colormap is not None and not df.empty:
             table_html = HTMLGenerator.generate_html_table(df, regions, colormap, vmax)
+        
+        # Image tag - only include if requested
+        image_section = ""
+        if include_image:
+            image_section = f'<img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">'
         
         html_template = f"""
         <!DOCTYPE html>
@@ -279,7 +284,7 @@ class HTMLGenerator:
                     <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
                     <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
                 </div>
-                <img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">
+                {image_section}
                 <h2>📊 Data Table</h2>
                 {table_html}
                 <div class="meta">
@@ -319,7 +324,8 @@ def main():
                 df=df,
                 regions=config.regions,
                 colormap=generator.colormap,
-                vmax=config.vmax_pm25
+                vmax=config.vmax_pm25,
+                include_image=False
             )
             logger.info("Successfully updated heatmap and index.html")
             

@@ -1,33 +1,26 @@
-```
-# Python
-__pycache__/
+# Examples 1:
+(empty — output nothing)
+
+# Example 2 (Project with artifacts):
+# Compiled and build artifacts
 *.pyc
-*.pyo
-*.pyd
-
-# Environment
-.venv/
-venv/
-.env
-.env.local
-*.env.*
-
-# Logs
-*.log
-
-# Dependencies
-node_modules/
-
-# Build artifacts
+__pycache__/
+*.o
+*.obj
 dist/
 build/
-target/
-
+# Dependencies
+.venv/
+venv/
+node_modules/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+# Environment
+.env
+.env.local
+.env.*
 # Editors
 .vscode/
 .idea/
-
-# OS
-.DS_Store
-Thumbs.db
-```
