@@ -28,12 +28,25 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-          # 1. Pull latest changes to avoid the 'rejected' error
-          git pull --rebase origin main
-          
-          # 2. Add files (using -f to bypass any .gitignore issues)
+
+          # 1. Stage the new data/image so Git knows about them
           git add -f haze_latest.png index.html sg_haze.db
+
+          # 2. "Stash" them temporarily to clear the workspace for the pull
+          git stash
+
+          # 3. Pull the latest from the server to get in sync
+          git pull --rebase origin main
+
+          # 4. Bring your changes back out of the stash
+          git stash pop || echo "No stash to pop"
+
+          # 5. Re-stage everything (just in case of conflicts)
+          git add -f haze_latest.png index.html sg_haze.db
+
+          # 6. Commit and Push
+          git commit -m "Hourly haze update: $(date)" || echo "No changes to commit"
+          git push origin main
           
           # 3. Commit only if there are actual changes
           git commit -m "Hourly haze update: $(date)" || echo "No changes to commit"
