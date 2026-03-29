@@ -6,11 +6,11 @@ A lightweight, automated system for tracking and visualizing Singapore's air qua
 
 This project fetches hourly PM2.5 readings from Singapore's National Environment Agency (NEA) via the [data.gov.sg API](https://api-open.data.gov.sg/v2/real-time/api/pm25), stores them in a local SQLite database, and generates a color-coded heatmap visualization showing pollution trends across five regions over the past 7 days.
 
-The entire pipeline runs automatically via **GitHub Actions** on an hourly schedule, with results published to **GitHub Pages**.
+The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, with results published to **GitHub Pages**.
 
 ## Features
 
-- **Automated Data Collection**: Hourly sync with data.gov.sg API
+- **Automated Data Collection**: Sync with data.gov.sg API every 15 minutes
 - **Historical Database**: SQLite storage for trend analysis
 - **Visual Heatmap**: Color-coded PM2.5 levels by region (West, North, Central, South, East)
 - **Web Dashboard**: Clean HTML page hosted on GitHub Pages
@@ -48,7 +48,7 @@ The entire pipeline runs automatically via **GitHub Actions** on an hourly sched
 - Updates `index.html` with fresh data and timestamp
 
 ### 3. Automation (GitHub Actions)
-- Runs hourly via cron schedule (`47 * * * *`)
+- Runs every 15 minutes via cron schedule (`*/15 * * * *`)
 - Commits updated assets (PNG, DB, HTML) to the `main` branch
 - Triggers GitHub Pages rebuild for live updates
 
@@ -98,7 +98,7 @@ class Config:
 ## Data Source
 
 - **API**: [data.gov.sg - PM2.5 Real-time](https://api-open.data.gov.sg/v2/real-time/api/pm25)
-- **Update Frequency**: Hourly
+- **Update Frequency**: Every 15 minutes
 - **Regions Covered**: West, North, Central, South, East
 
 ## License
