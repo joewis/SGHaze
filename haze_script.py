@@ -159,7 +159,9 @@ class HTMLGenerator:
         rows = []
         for _, row in df_table.iterrows():
             timestamp = row['timestamp']
-            time_label = timestamp.strftime('%a %d, %H:%M')
+            #time_label = timestamp.strftime('%a %d, %H:%M')
+            time_label = timestamp.strftime('%d %b %Y %H:%M')
+
             
             cells = []
             for region in regions:
