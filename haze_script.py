@@ -82,7 +82,8 @@ class DatabaseFetcher:
             # 2. Calculate the start of our window
             cutoff_dt = latest_db_ts - timedelta(days=self.config.days_to_plot)
             cutoff_str = cutoff_dt.isoformat()
-
+            logger.info(f"Cutoff date: {cutoff_str}")
+            
             # 3. Pull the data into a DataFrame
             query = """
                 SELECT * FROM pm25_readings 
