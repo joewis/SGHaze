@@ -13,11 +13,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
-import seaborn as sns
 
 # --- Logging Configuration ---
 logging.basicConfig(
@@ -105,78 +102,33 @@ class DatabaseFetcher:
         
         return df
 
-class HeatmapGenerator:
-    """Handles the creation of the Seaborn heatmap image."""
+# PM2.5 thresholds (µg/m³) and their specific colors
+PM25_LEVELS = [
+    (0, "#228B22"),   # Good
+    (12, "#FFFF00"),  # Moderate (Low)
+    (35, "#FFCC00"),  # Moderate (High)
+    (55, "#FF8800"),  # Unhealthy (Low)
+    (150, "#FF0000"), # Unhealthy (High)
+    (250, "#800080")  # Hazardous
+]
+
+
+def create_colormap(vmax: int) -> LinearSegmentedColormap:
+    """Create a colormap for PM2.5 values."""
+    # 1. Filter levels that are below our VMAX
+    valid_levels = [lvl for lvl in PM25_LEVELS if lvl[0] < vmax]
     
-    # PM2.5 thresholds (µg/m³) and their specific colors
-    PM25_LEVELS = [
-        (0, "#228B22"),   # Good
-        (12, "#FFFF00"),  # Moderate (Low)
-        (35, "#FFCC00"),  # Moderate (High)
-        (55, "#FF8800"),  # Unhealthy (Low)
-        (150, "#FF0000"), # Unhealthy (High)
-        (250, "#800080")  # Hazardous
-    ]
-
-    def __init__(self, config: Config):
-        self.config = config
-        self.colormap = self._create_colormap()
-
-    def _create_colormap(self) -> LinearSegmentedColormap:
-        vmax = self.config.vmax_pm25
-        
-        # 1. Filter levels that are below our VMAX
-        valid_levels = [lvl for lvl in self.PM25_LEVELS if lvl[0] < vmax]
-        
-        # 2. Create the anchors for those levels
-        anchors = [(val/vmax, col) for val, col in valid_levels]
-        
-        # 3. FORCE the final anchor to be exactly 1.0 using the next highest color
-        # This fixes the "must end with x=1" error
-        upper_colors = [lvl[1] for lvl in self.PM25_LEVELS if lvl[0] >= vmax]
-        final_color = upper_colors[0] if upper_colors else self.PM25_LEVELS[-1][1]
-        
-        anchors.append((1.0, final_color))
-        
-        return LinearSegmentedColormap.from_list("SG_Haze", anchors)
-
-    def generate(self, df: pd.DataFrame) -> bool:
-        """Renders the heatmap to a PNG file."""
-        # Ensure we are sorted newest-to-oldest for vertical display
-        df_plot = df.sort_values('timestamp', ascending=False)
-        
-        # Prepare the matrix
-        heatmap_data = df_plot.set_index('timestamp')[self.config.regions]
-        y_labels = [t.strftime('%a %d, %H:%M') for t in heatmap_data.index]
-        x_labels = [r.capitalize() for r in self.config.regions]
-
-        # Calculate height dynamically based on number of rows
-        total_height = self.config.header_height_inches + (len(df_plot) * self.config.row_height_inches)
-        
-        fig = plt.figure(figsize=(self.config.figure_width_inches, total_height))
-        gs = gridspec.GridSpec(2, 1, height_ratios=[0.4, len(df_plot) * self.config.row_height_inches], hspace=0.08)
-        
-        cax = fig.add_subplot(gs[0]) # Legend/Header
-        ax = fig.add_subplot(gs[1])  # Heatmap
-        
-        sns.heatmap(
-            heatmap_data, ax=ax, cbar_ax=cax, cmap=self.colormap,
-            vmin=0, vmax=self.config.vmax_pm25,
-            yticklabels=y_labels, xticklabels=x_labels,
-            cbar_kws={'label': 'PM2.5 Concentration (µg/m³)', 'orientation': 'horizontal'},
-            annot=True, fmt=".0f", annot_kws={"size": 9}, linewidths=0.2
-        )
-        
-        # Formatting
-        cax.set_title(f'Singapore PM2.5 Trends: Last {self.config.days_to_plot} Days', 
-                      fontsize=18, pad=20, fontweight='bold')
-        ax.xaxis.tick_top()
-        ax.xaxis.set_label_position('top')
-        plt.setp(ax.get_xticklabels(), fontsize=12, fontweight='bold')
-        
-        plt.savefig(self.config.output_image_name, dpi=self.config.dpi, bbox_inches='tight')
-        plt.close()
-        return True
+    # 2. Create the anchors for those levels
+    anchors = [(val/vmax, col) for val, col in valid_levels]
+    
+    # 3. FORCE the final anchor to be exactly 1.0 using the next highest color
+    # This fixes the "must end with x=1" error
+    upper_colors = [lvl[1] for lvl in PM25_LEVELS if lvl[0] >= vmax]
+    final_color = upper_colors[0] if upper_colors else PM25_LEVELS[-1][1]
+    
+    anchors.append((1.0, final_color))
+    
+    return LinearSegmentedColormap.from_list("SG_Haze", anchors)
 
 class HTMLGenerator:
     """Generates a clean index.html file to host on GitHub Pages."""
@@ -304,7 +256,6 @@ class HTMLGenerator:
 def main():
     config = Config()
     fetcher = DatabaseFetcher(config)
-    generator = HeatmapGenerator(config)
     
     try:
         # 1. Get Data
@@ -312,23 +263,22 @@ def main():
         if df.empty:
             return 1
             
-        # 2. Render Heatmap
-        success = generator.generate(df)
+        # 2. Create colormap for HTML table coloring
+        colormap = create_colormap(config.vmax_pm25)
         
         # 3. Update HTML
-        if success:
-            #last_ts = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
-            last_ts = fetcher.fetch_freshness_from_db()
-            HTMLGenerator.generate(
-                config.output_image_name, 
-                last_ts, 
-                config.output_html_file,
-                df=df,
-                regions=config.regions,
-                colormap=generator.colormap,
-                vmax=config.vmax_pm25
-            )
-            logger.info("Successfully updated heatmap and index.html")
+        #last_ts = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
+        last_ts = fetcher.fetch_freshness_from_db()
+        HTMLGenerator.generate(
+            config.output_image_name, 
+            last_ts, 
+            config.output_html_file,
+            df=df,
+            regions=config.regions,
+            colormap=colormap,
+            vmax=config.vmax_pm25
+        )
+        logger.info("Successfully updated index.html")
             
     except Exception as e:
         logger.error(f"Execution failed: {e}")
