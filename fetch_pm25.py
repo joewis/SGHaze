@@ -29,27 +29,32 @@ def fetch_day_data(date_str):
     try:
         response = requests.get(API_URL, params={"date": date_str}, timeout=15)
         response.raise_for_status()
-        data = response.json()
-        items = data.get('data', {}).get('items', [])
+        
+        json_payload = response.json()
+        # The data is nested under 'data' -> 'items'
+        data_content = json_payload.get('data', {})
+        items = data_content.get('items', [])
         
         if not items:
             return True
 
         with sqlite3.connect(DB_NAME) as conn:
             cursor = conn.cursor()
+            
+            # 1. Handle Metadata (Do this once per day, not per hour)
+            # Use the most recent item in the list for the 'updated' field
+            cursor.execute("CREATE TABLE IF NOT EXISTS sync_meta (key TEXT PRIMARY KEY, value TEXT)")
+            
+            # Fix: Path is items[0], not data['items'][0]
+            # Since items are usually sorted, [0] or [-1] depends on API sort order
+            updated_ts = items[0].get('updatedTimestamp', 'Unknown')
+            cursor.execute("INSERT OR REPLACE INTO sync_meta (key, value) VALUES ('last_api_update', ?)", (updated_ts,))
+
+            # 2. Handle hourly readings
             for item in items:
                 ts = item.get('timestamp')
-                # Extract readings - API usually returns keys: west, east, central, south, north
                 r = item.get('readings', {}).get('pm25_one_hourly', {})
 
-                # Create table if not exists (only one row ever)
-                cursor.execute("CREATE TABLE IF NOT EXISTS sync_meta (key TEXT PRIMARY KEY, value TEXT)")
-
-                # Update the single value
-                updated_ts = data['items'][0]['updatedTimestamp']
-                cursor.execute("INSERT OR REPLACE INTO sync_meta (key, value) VALUES ('last_api_update', ?)", (updated_ts,))
-                
-                # INSERT OR REPLACE handles partial day updates (e.g. today's hourly updates)
                 cursor.execute("""
                     INSERT OR REPLACE INTO pm25_readings 
                     (timestamp, west, north, central, south, east)
