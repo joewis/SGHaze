@@ -22,7 +22,7 @@ jobs:
           pip install requests pandas pytz
 
       - name: Run Sync Script
-        run: python your_sync_script.py
+        run: python fetch_pm25.py
 
       - name: Commit and Push changes
         run: |
