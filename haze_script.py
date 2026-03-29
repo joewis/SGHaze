@@ -116,8 +116,20 @@ class HeatmapGenerator:
 
     def _create_colormap(self) -> LinearSegmentedColormap:
         vmax = self.config.vmax_pm25
-        # Normalize the thresholds to 0.0 - 1.0 for the colormap
-        anchors = [(val/vmax, col) for val, col in self.PM25_LEVELS if val <= vmax]
+        
+        # 1. Filter levels that are below our VMAX
+        valid_levels = [lvl for lvl in self.PM25_LEVELS if lvl[0] < vmax]
+        
+        # 2. Create the anchors for those levels
+        anchors = [(val/vmax, col) for val, col in valid_levels]
+        
+        # 3. FORCE the final anchor to be exactly 1.0 using the next highest color
+        # This fixes the "must end with x=1" error
+        upper_colors = [lvl[1] for lvl in self.PM25_LEVELS if lvl[0] >= vmax]
+        final_color = upper_colors[0] if upper_colors else self.PM25_LEVELS[-1][1]
+        
+        anchors.append((1.0, final_color))
+        
         return LinearSegmentedColormap.from_list("SG_Haze", anchors)
 
     def generate(self, df: pd.DataFrame) -> bool:
