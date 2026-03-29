@@ -1,0 +1,72 @@
+name: Haze Sync and Refresh
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+# Prevents multiple runs from fighting over the same git commit
+concurrency:
+  group: haze-pipeline
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Important for --amend: fetches full history
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas seaborn matplotlib pytz
+
+      - name: Run Sync (Fetch Data)
+        run: python fetch_pm25.py
+
+      - name: Run Heatmap Generator
+        run: python haze_script.py
+
+      - name: Force-Update Single Commit
+        id: commit_step
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Add all assets
+          git add -f haze_latest.png index.html sg_haze.db
+          
+          # Check if there are actual changes before proceeding
+          if git diff --cached --quiet; then
+            echo "No changes detected. Skipping push."
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            # 1. Amend the last commit with the new data
+            # 2. Force push to keep the repo at a single "Latest Update" commit
+            git commit --amend --no-edit || git commit -m "Automated Haze Update"
+            git push origin main --force
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger GitHub Pages Rebuild
+        if: steps.commit_step.outputs.changes == 'true'
+        run: |
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/pages/builds
