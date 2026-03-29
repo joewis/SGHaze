@@ -2,7 +2,7 @@ name: Sync PM2.5 Data
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour on the hour
+  - cron: '*/15 * * * *'  
   workflow_dispatch: # Allows you to run it manually for testing
 
 jobs:
