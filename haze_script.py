@@ -58,6 +58,13 @@ class DatabaseFetcher:
     def __init__(self, config: Config):
         self.config = config
 
+    def fetch_freshness_from_db(self):
+        with sqlite3.connect(self.config.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM sync_meta WHERE key = 'last_api_update'")
+            res = cursor.fetchone()
+            return res[0] if res else "Unknown"
+    
     def fetch_data(self) -> pd.DataFrame:
         """
         Retrieves data relative to the LATEST timestamp in the database.
@@ -232,7 +239,8 @@ def main():
         
         # 3. Update HTML
         if success:
-            last_ts = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
+            #last_ts = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
+            last_ts = fetcher.fetch_freshness_from_db()
             HTMLGenerator.generate(config.output_image_name, last_ts, config.output_html_file)
             logger.info("Successfully updated heatmap and index.html")
             
