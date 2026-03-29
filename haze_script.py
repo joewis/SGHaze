@@ -31,7 +31,7 @@ class Config:
     db_path: Path = Path(__file__).parent / "sg_haze.db"
     
     # Data Window
-    days_to_plot: int = 28  # Number of days to show in the heatmap
+    days_to_plot: int = 7*16  # Number of days to show in the heatmap
     
     # Visualization Settings
     regions: list = None
