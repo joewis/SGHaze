@@ -279,8 +279,8 @@ class HTMLGenerator:
                     <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
                     <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
                 </div>
-                <img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">
-                <h2>📊 Data Table</h2>
+                <!--img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap"-->
+                <!--h2>📊 Data Table</h2-->
                 {table_html}
                 <div class="meta">
                     <strong>Source:</strong> data.gov.sg API<br>
