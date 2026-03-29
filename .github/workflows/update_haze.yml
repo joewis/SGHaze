@@ -1,4 +1,4 @@
-name: Hourly Haze Update
+name: Refresh Heatmap
 
 on:
   schedule:
