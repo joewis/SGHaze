@@ -2,7 +2,7 @@ name: Haze Sync and Refresh
 
 on:
   schedule:
-    - cron: '* * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 # Prevents multiple runs from fighting over the same git commit
