@@ -41,6 +41,13 @@ def fetch_day_data(date_str):
                 ts = item.get('timestamp')
                 # Extract readings - API usually returns keys: west, east, central, south, north
                 r = item.get('readings', {}).get('pm25_one_hourly', {})
+
+                # Create table if not exists (only one row ever)
+                cursor.execute("CREATE TABLE IF NOT EXISTS sync_meta (key TEXT PRIMARY KEY, value TEXT)")
+
+                # Update the single value
+                updated_ts = data['items'][0]['updatedTimestamp']
+                cursor.execute("INSERT OR REPLACE INTO sync_meta (key, value) VALUES ('last_api_update', ?)", (updated_ts,))
                 
                 # INSERT OR REPLACE handles partial day updates (e.g. today's hourly updates)
                 cursor.execute("""
