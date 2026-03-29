@@ -182,7 +182,69 @@ class HTMLGenerator:
     """Generates a clean index.html file to host on GitHub Pages."""
     
     @staticmethod
-    def generate(image_path: str, last_ts_str: str, output_path: str):
+    def _rgb_to_hex(rgb_tuple) -> str:
+        """Convert RGB tuple (0-1 range) to hex color string."""
+        r, g, b = rgb_tuple
+        return '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
+    
+    @staticmethod
+    def get_color_for_value(value: float, colormap: LinearSegmentedColormap, vmax: int = 250) -> str:
+        """Return the color hex code for a given PM2.5 value using the actual heatmap colormap."""
+        # Normalize value to 0-1 range based on vmax
+        normalized = min(value / vmax, 1.0)
+        # Get the interpolated color from the colormap
+        rgb_color = colormap(normalized)
+        # Convert to hex (ignore alpha channel)
+        return HTMLGenerator._rgb_to_hex(rgb_color[:3])
+    
+    @staticmethod
+    def generate_html_table(df: pd.DataFrame, regions: list, colormap: LinearSegmentedColormap, vmax: int = 250) -> str:
+        """Generate an HTML table with color-coded cells matching the heatmap."""
+        # Sort data newest to oldest to match heatmap
+        df_table = df.sort_values('timestamp', ascending=False).copy()
+        
+        # Build table rows
+        rows = []
+        for _, row in df_table.iterrows():
+            timestamp = row['timestamp']
+            time_label = timestamp.strftime('%a %d, %H:%M')
+            
+            cells = []
+            for region in regions:
+                value = row[region]
+                color = HTMLGenerator.get_color_for_value(value, colormap, vmax)
+                # Use white text for darker colors, black for lighter ones
+                # Check luminance to determine text color
+                r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
+                luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                text_color = "#ffffff" if luminance < 0.5 else "#000000"
+                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 8px;">{value:.0f}</td>')
+            
+            rows.append(f'<tr><td style="font-weight: bold; padding: 8px; white-space: nowrap;">{time_label}</td>' + ''.join(cells) + '</tr>')
+        
+        # Build header row
+        header_cells = [f'<th style="padding: 10px; background-color: #333; color: white;">Time</th>']
+        for region in regions:
+            header_cells.append(f'<th style="padding: 10px; background-color: #333; color: white;">{region.capitalize()}</th>')
+        header_row = '<tr>' + ''.join(header_cells) + '</tr>'
+        
+        table_html = f'''
+        <div style="overflow-x: auto; margin-top: 20px;">
+            <table style="border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 0.9rem;">
+                {header_row}
+                {''.join(rows)}
+            </table>
+        </div>
+        '''
+        return table_html
+    
+    @staticmethod
+    def generate(image_path: str, last_ts_str: str, output_path: str, df: pd.DataFrame = None, regions: list = None, colormap: LinearSegmentedColormap = None, vmax: int = 250):
+        # Generate the data table if dataframe is provided
+        table_html = ""
+        if df is not None and regions is not None and colormap is not None and not df.empty:
+            table_html = HTMLGenerator.generate_html_table(df, regions, colormap, vmax)
+        
         html_template = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -194,11 +256,18 @@ class HTMLGenerator:
                 body {{ font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
                 .card {{ background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; max-width: 1000px; width: 100%; }}
                 h1 {{ font-size: 1.5rem; margin-top: 0; color: #1c1e21; text-align: center; }}
+                h2 {{ font-size: 1.2rem; margin-top: 20px; color: #1c1e21; text-align: center; }}
                 img {{ width: 100%; height: auto; border-radius: 4px; }}
                 .meta {{ margin-top: 15px; font-size: 0.85rem; color: #65676b; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }}
-                .legend {{ display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 0.8rem; font-weight: 600; }}
+                .legend {{ display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 0.8rem; font-weight: 600; flex-wrap: wrap; }}
                 .item {{ display: flex; align-items: center; gap: 5px; }}
                 .dot {{ height: 10px; width: 10px; border-radius: 50%; }}
+                @media (max-width: 600px) {{
+                    .card {{ padding: 10px; }}
+                    h1 {{ font-size: 1.2rem; }}
+                    h2 {{ font-size: 1rem; }}
+                    .legend {{ gap: 10px; font-size: 0.7rem; }}
+                }}
             </style>
         </head>
         <body>
@@ -211,6 +280,8 @@ class HTMLGenerator:
                     <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
                 </div>
                 <img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">
+                <h2>📊 Data Table</h2>
+                {table_html}
                 <div class="meta">
                     <strong>Source:</strong> data.gov.sg API<br>
                     <strong>Data Freshness:</strong> {last_ts_str} (SGT)<br>
@@ -241,7 +312,15 @@ def main():
         if success:
             #last_ts = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
             last_ts = fetcher.fetch_freshness_from_db()
-            HTMLGenerator.generate(config.output_image_name, last_ts, config.output_html_file)
+            HTMLGenerator.generate(
+                config.output_image_name, 
+                last_ts, 
+                config.output_html_file,
+                df=df,
+                regions=config.regions,
+                colormap=generator.colormap,
+                vmax=config.vmax_pm25
+            )
             logger.info("Successfully updated heatmap and index.html")
             
     except Exception as e:

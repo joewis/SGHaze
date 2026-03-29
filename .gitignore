@@ -1,1 +1,33 @@
-Nothing should be ignored in this case, as the changes only include source/config files (.github/workflows/sync_and_refresh.yml, README.md) without any build artifacts, dependencies, or temporary files that need to be ignored.
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.venv/
+venv/
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+```
