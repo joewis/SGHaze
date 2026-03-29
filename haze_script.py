@@ -38,7 +38,7 @@ class Config:
     
     # Visualization Settings
     regions: list = None
-    vmax_pm25: int = 120  # Max scale for color (120 is high for PM2.5)
+    vmax_pm25: int = 250  # Max scale for color (216 is the highest ever recorded in Singapore for PM2.5)
     row_height_inches: float = 0.25
     header_height_inches: float = 2.5
     figure_width_inches: float = 11.0
