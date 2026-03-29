@@ -1,15 +1,13 @@
 """
-SG PM2.5 Haze Heatmap Generator
+SG PM2.5 Haze Heatmap Generator (Database Edition)
 
-This script fetches PM2.5 data from data.gov.sg API, generates heatmaps,
-and creates an HTML page for visualization.
-
-Author: [Your Name]
-License: MIT
+This script pulls historical data from a local SQLite database, 
+generates a vertical heatmap, and creates an HTML page for visualization.
+It is designed to run locally on an X230 or via GitHub Actions.
 """
 
 import logging
-import time
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -18,523 +16,217 @@ from typing import Optional
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import pandas as pd
-import requests
 from matplotlib.colors import LinearSegmentedColormap
 import seaborn as sns
 
-# Configure logging
+# --- Logging Configuration ---
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-
 @dataclass
 class Config:
     """Configuration parameters for the haze script."""
-    # Number of days to fetch data for
-    days_to_fetch: int = 14
+    # File Paths
+    base_dir: Path = Path(__file__).parent
+    db_path: Path = Path(__file__).parent / "sg_haze.db"
     
-    # API settings
-    api_base_url: str = "https://api-open.data.gov.sg/v2/real-time/api/pm25"
-    api_timeout: int = 10
-    api_delay_between_requests: float = 5.0
+    # Data Window
+    days_to_plot: int = 7  # Number of days to show in the heatmap
     
-    # Visualization settings
+    # Visualization Settings
     regions: list = None
-    vmax_pm25: int = 300
-    row_height_inches: float = 0.28
-    header_height_inches: float = 3.0
-    figure_width_inches: float = 10.0
-    dpi: int = 110
+    vmax_pm25: int = 120  # Max scale for color (120 is high for PM2.5)
+    row_height_inches: float = 0.25
+    header_height_inches: float = 2.5
+    figure_width_inches: float = 11.0
+    dpi: int = 120
     
-    # Output settings
-    output_image_prefix: str = "haze"
+    # Output Settings
+    output_image_name: str = "haze_latest.png"
     output_html_file: str = "index.html"
     
     def __post_init__(self):
         if self.regions is None:
             self.regions = ['west', 'north', 'central', 'south', 'east']
 
-
-@dataclass
-class APIResponse:
-    """Container for API response data."""
-    anchor_time: Optional[pd.Timestamp]
-    last_updated_str: str
-    historical_data: list
-
-
-class PM25DataFetcher:
-    """Handles fetching PM2.5 data from the API."""
+class DatabaseFetcher:
+    """Handles fetching PM2.5 data from the local SQLite database."""
     
     def __init__(self, config: Config):
         self.config = config
-    
-    def fetch_latest_anchor(self) -> tuple[pd.Timestamp, str]:
-        """
-        Fetch the latest available data point from the API.
-        
-        Returns:
-            Tuple of (anchor_time, last_updated_str)
-            
-        Raises:
-            RuntimeError: If unable to fetch data from API
-        """
-        logger.info("Fetching latest available data point from API...")
-        
-        try:
-            response = requests.get(
-                self.config.api_base_url,
-                timeout=self.config.api_timeout
-            )
-            response.raise_for_status()
-            res = response.json()
-            
-            items = res.get('data', {}).get('items', [])
-            if not items:
-                raise ValueError("No items returned in API response")
-            
-            latest_item = items[0]
-            anchor_time = pd.to_datetime(latest_item.get('timestamp'))
-            last_updated_str = latest_item.get('updatedTimestamp', str(anchor_time))
-            
-            logger.info(f"Anchor time found: {anchor_time}")
-            return anchor_time, last_updated_str
-            
-        except requests.RequestException as e:
-            logger.error(f"Network error while fetching latest data: {e}")
-            raise RuntimeError(f"Failed to fetch latest data: {e}")
-        except (KeyError, ValueError, TypeError) as e:
-            logger.error(f"Invalid API response format: {e}")
-            raise RuntimeError(f"Invalid API response: {e}")
-    
-    def fetch_historical_data(self, anchor_time: pd.Timestamp) -> list[dict]:
-        """
-        Fetch historical PM2.5 data for the specified number of days.
-        
-        Args:
-            anchor_time: Starting point for fetching historical data
-            
-        Returns:
-            List of data records with timestamp and regional readings
-        """
-        logger.info(f"Fetching historical data for {self.config.days_to_fetch} days...")
-        
-        # Generate unique dates to fetch
-        dates_to_fetch = sorted(set(
-            (anchor_time - timedelta(days=i)).strftime('%Y-%m-%d')
-            for i in range(self.config.days_to_fetch)
-        ))
-        
-        all_data = []
-        for i, date_str in enumerate(dates_to_fetch, 1):
-            url = f"{self.config.api_base_url}?date={date_str}"
-            logger.info(f"[{i}/{len(dates_to_fetch)}] Fetching: {url}")
-            
-            try:
-                time.sleep(self.config.api_delay_between_requests)
-                response = requests.get(url, timeout=self.config.api_timeout)
-                
-                if response.status_code != 200:
-                    logger.warning(f"HTTP {response.status_code} for {date_str}, skipping")
-                    continue
-                
-                items = response.json().get('data', {}).get('items', [])
-                
-                for item in items:
-                    row = {'timestamp': item.get('timestamp')}
-                    readings = item.get('readings', {}).get('pm25_one_hourly', {})
-                    row.update(readings)
-                    all_data.append(row)
-                    
-            except requests.RequestException as e:
-                logger.warning(f"Error fetching {date_str}: {e}")
-            except (KeyError, TypeError) as e:
-                logger.warning(f"Invalid data format for {date_str}: {e}")
-        
-        logger.info(f"Fetched {len(all_data)} data points")
-        return all_data
-    
-    def fetch_all_data(self) -> APIResponse:
-        """
-        Fetch both latest anchor and historical data.
-        
-        Returns:
-            APIResponse containing all fetched data
-        """
-        anchor_time, last_updated_str = self.fetch_latest_anchor()
-        historical_data = self.fetch_historical_data(anchor_time)
-        
-        return APIResponse(
-            anchor_time=anchor_time,
-            last_updated_str=last_updated_str,
-            historical_data=historical_data
-        )
 
+    def fetch_data(self) -> pd.DataFrame:
+        """
+        Retrieves data relative to the LATEST timestamp in the database.
+        This avoids issues with GitHub runners using UTC.
+        """
+        if not self.config.db_path.exists():
+            raise FileNotFoundError(f"Database not found at {self.config.db_path}")
 
-class DataProcessor:
-    """Handles data processing and transformation."""
-    
-    def __init__(self, config: Config):
-        self.config = config
-    
-    def process_raw_data(self, raw_data: list[dict]) -> pd.DataFrame:
-        """
-        Process raw API data into a clean DataFrame.
-        
-        Args:
-            raw_data: List of dictionaries from API
+        with sqlite3.connect(self.config.db_path) as conn:
+            # 1. Find the Anchor (The most recent data point we have)
+            cursor = conn.cursor()
+            cursor.execute("SELECT MAX(timestamp) FROM pm25_readings")
+            res = cursor.fetchone()
             
-        Returns:
-            Cleaned and processed DataFrame
-        """
-        if not raw_data:
-            logger.warning("No data to process")
-            return pd.DataFrame()
+            if not res or not res[0]:
+                logger.error("Database table is empty.")
+                return pd.DataFrame()
+            
+            latest_db_ts = pd.to_datetime(res[0])
+            logger.info(f"Latest data point in DB: {latest_db_ts}")
+
+            # 2. Calculate the start of our window
+            cutoff_dt = latest_db_ts - timedelta(days=self.config.days_to_plot)
+            cutoff_str = cutoff_dt.isoformat()
+
+            # 3. Pull the data into a DataFrame
+            query = """
+                SELECT * FROM pm25_readings 
+                WHERE timestamp >= ? 
+                ORDER BY timestamp DESC
+            """
+            df = pd.read_sql(query, conn, params=(cutoff_str,))
         
-        df = pd.DataFrame(raw_data)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df = df.sort_values('timestamp').drop_duplicates('timestamp')
+        if not df.empty:
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            logger.info(f"Loaded {len(df)} rows for the heatmap.")
         
-        # Validate that all regions are present
-        missing_regions = set(self.config.regions) - set(df.columns)
-        if missing_regions:
-            logger.warning(f"Missing region columns: {missing_regions}")
-        
-        logger.info(f"Processed {len(df)} unique timestamps")
         return df
 
-
 class HeatmapGenerator:
-    """Handles heatmap visualization generation."""
+    """Handles the creation of the Seaborn heatmap image."""
     
-    # PM2.5 level thresholds with corresponding colors and labels
-    # Format: (threshold_value, color_hex, label)
+    # PM2.5 thresholds (µg/m³) and their specific colors
     PM25_LEVELS = [
-        (0, "#228B22", "Good"),
-        (12, "#66DD00", "Moderate"),
-        (35, "#FFFF00", "Moderate"),
-        (75, "#FF8800", "Unhealthy"),
-        (150, "#FF0000", "Unhealthy"),
-        (250, "#800080", "Hazardous"),
-        (300, "#800000", "Hazardous")
+        (0, "#228B22"),   # Good
+        (12, "#FFFF00"),  # Moderate (Low)
+        (35, "#FFCC00"),  # Moderate (High)
+        (55, "#FF8800"),  # Unhealthy (Low)
+        (150, "#FF0000"), # Unhealthy (High)
+        (250, "#800080")  # Hazardous
     ]
-    
+
     def __init__(self, config: Config):
         self.config = config
         self.colormap = self._create_colormap()
-    
+
     def _create_colormap(self) -> LinearSegmentedColormap:
-        """Create custom colormap for PM2.5 levels."""
         vmax = self.config.vmax_pm25
-        anchors = [
-            (threshold/vmax, color)
-            for threshold, color, _ in self.PM25_LEVELS
-        ]
-        return LinearSegmentedColormap.from_list("SG_Haze_Scale", anchors)
-    
-    @staticmethod
-    def get_legend_colors() -> list[tuple[str, str]]:
-        """
-        Get unique color-label pairs for the legend.
+        # Normalize the thresholds to 0.0 - 1.0 for the colormap
+        anchors = [(val/vmax, col) for val, col in self.PM25_LEVELS if val <= vmax]
+        return LinearSegmentedColormap.from_list("SG_Haze", anchors)
+
+    def generate(self, df: pd.DataFrame) -> bool:
+        """Renders the heatmap to a PNG file."""
+        # Ensure we are sorted newest-to-oldest for vertical display
+        df_plot = df.sort_values('timestamp', ascending=False)
         
-        Returns:
-            List of (color_hex, label) tuples for legend display
-        """
-        # Select representative colors for each category
-        # Using specific thresholds that best represent each level
-        legend_mapping = {
-            "Good": "#228B22",      # 0 - Forest Green
-            "Moderate": "#FFFF00",  # 35 - Yellow (most recognizable for moderate)
-            "Unhealthy": "#FF0000", # 150 - Red (most recognizable for unhealthy)
-            "Hazardous": "#800080"  # 250 - Purple
-        }
-        # Return in order of PM2.5 levels
-        return [(legend_mapping[label], label) for label in 
-                ["Good", "Moderate", "Unhealthy", "Hazardous"]]
-    
-    def generate_vertical_heatmap(
-        self,
-        df: pd.DataFrame,
-        anchor_time: pd.Timestamp,
-        days: int,
-        filename: str
-    ) -> bool:
-        """
-        Generate a vertical heatmap visualization.
+        # Prepare the matrix
+        heatmap_data = df_plot.set_index('timestamp')[self.config.regions]
+        y_labels = [t.strftime('%a %d, %H:%M') for t in heatmap_data.index]
+        x_labels = [r.capitalize() for r in self.config.regions]
+
+        # Calculate height dynamically based on number of rows
+        total_height = self.config.header_height_inches + (len(df_plot) * self.config.row_height_inches)
         
-        Args:
-            df: Processed DataFrame with PM2.5 data
-            anchor_time: Reference timestamp
-            days: Number of days to include
-            filename: Output filename for the image
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        logger.info(f"Generating heatmap for last {days} day(s)...")
-        
-        # Filter data for the specified time range
-        cutoff = anchor_time - pd.Timedelta(days=days)
-        df_filtered = df[df['timestamp'] >= cutoff].copy()
-        df_filtered = df_filtered.sort_values('timestamp', ascending=False)
-        
-        if df_filtered.empty or len(df_filtered) < 2:
-            logger.warning("Insufficient data for heatmap generation")
-            return False
-        
-        # Prepare heatmap data
-        heatmap_data = df_filtered.set_index('timestamp')[self.config.regions]
-        y_labels = [t.strftime('%a %H:%M') for t in heatmap_data.index]
-        
-        # Calculate figure dimensions
-        total_height = (
-            self.config.header_height_inches +
-            len(df_filtered) * self.config.row_height_inches
-        )
-        
-        # Create figure with GridSpec
         fig = plt.figure(figsize=(self.config.figure_width_inches, total_height))
-        gs = gridspec.GridSpec(
-            2, 1,
-            height_ratios=[1.2, len(df_filtered) * self.config.row_height_inches],
-            hspace=0.15
-        )
+        gs = gridspec.GridSpec(2, 1, height_ratios=[0.4, len(df_plot) * self.config.row_height_inches], hspace=0.08)
         
-        cax = fig.add_subplot(gs[0])  # Header axis
-        ax = fig.add_subplot(gs[1])   # Heatmap axis
+        cax = fig.add_subplot(gs[0]) # Legend/Header
+        ax = fig.add_subplot(gs[1])  # Heatmap
         
-        # Generate heatmap
         sns.heatmap(
-            heatmap_data,
-            ax=ax,
-            cbar_ax=cax,
-            cmap=self.colormap,
-            vmin=0,
-            vmax=self.config.vmax_pm25,
-            yticklabels=y_labels,
-            xticklabels=[r.capitalize() for r in self.config.regions],
-            cbar_kws={
-                'label': 'PM2.5 Concentration',
-                'orientation': 'horizontal'
-            },
-            annot=True,
-            fmt=".0f",
-            annot_kws={"size": 10},
-            linewidths=0.5
+            heatmap_data, ax=ax, cbar_ax=cax, cmap=self.colormap,
+            vmin=0, vmax=self.config.vmax_pm25,
+            yticklabels=y_labels, xticklabels=x_labels,
+            cbar_kws={'label': 'PM2.5 Concentration (µg/m³)', 'orientation': 'horizontal'},
+            annot=True, fmt=".0f", annot_kws={"size": 9}, linewidths=0.2
         )
         
-        # Configure title and labels
-        cax.set_title(
-            f'SG PM2.5: Latest {days} Day(s) (Newest on Top)',
-            fontsize=18,
-            pad=25,
-            fontweight='bold'
-        )
-        
+        # Formatting
+        cax.set_title(f'Singapore PM2.5 Trends: Last {self.config.days_to_plot} Days', 
+                      fontsize=18, pad=20, fontweight='bold')
         ax.xaxis.tick_top()
         ax.xaxis.set_label_position('top')
+        plt.setp(ax.get_xticklabels(), fontsize=12, fontweight='bold')
         
-        plt.setp(ax.get_xticklabels(), fontsize=13, fontweight='bold')
-        plt.setp(ax.get_yticklabels(), fontsize=10, rotation=0)
-        
-        # Save figure
-        plt.savefig(filename, dpi=self.config.dpi, bbox_inches='tight')
+        plt.savefig(self.config.output_image_name, dpi=self.config.dpi, bbox_inches='tight')
         plt.close()
-        
-        logger.info(f"Heatmap saved to: {filename}")
         return True
 
-
 class HTMLGenerator:
-    """Handles HTML page generation."""
+    """Generates a clean index.html file to host on GitHub Pages."""
     
     @staticmethod
-    def generate_html(
-        image_filename: str,
-        last_updated: str,
-        output_path: str
-    ) -> None:
+    def generate(image_path: str, last_ts_str: str, output_path: str):
+        html_template = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>SG PM2.5 Tracker</title>
+            <style>
+                body {{ font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
+                .card {{ background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; max-width: 1000px; width: 100%; }}
+                h1 {{ font-size: 1.5rem; margin-top: 0; color: #1c1e21; text-align: center; }}
+                img {{ width: 100%; height: auto; border-radius: 4px; }}
+                .meta {{ margin-top: 15px; font-size: 0.85rem; color: #65676b; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }}
+                .legend {{ display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 0.8rem; font-weight: 600; }}
+                .item {{ display: flex; align-items: center; gap: 5px; }}
+                .dot {{ height: 10px; width: 10px; border-radius: 50%; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>🇸🇬 SG Haze Heatmap</h1>
+                <div class="legend">
+                    <div class="item"><div class="dot" style="background:#228B22"></div>Good</div>
+                    <div class="item"><div class="dot" style="background:#FFFF00"></div>Moderate</div>
+                    <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
+                    <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
+                </div>
+                <img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">
+                <div class="meta">
+                    <strong>Source:</strong> data.gov.sg API<br>
+                    <strong>Data Freshness:</strong> {last_ts_str} (SGT)<br>
+                    Generated via GitHub Actions
+                </div>
+            </div>
+        </body>
+        </html>
         """
-        Generate an HTML page displaying the heatmap.
-        
-        Args:
-            image_filename: Name of the heatmap image file
-            last_updated: Last update timestamp string
-            output_path: Path to save the HTML file
-        """
-        logger.info(f"Generating HTML page: {output_path}")
-        
-        # Get legend colors from HeatmapGenerator to ensure consistency
-        legend_items = HeatmapGenerator.get_legend_colors()
-        legend_html = "".join(
-            f'<span><span class="dot" style="background:{color}"></span>{label}</span>'
-            for color, label in legend_items
-        )
-        
-# Create a current status indicator (optional: pass the latest central reading to this function)
-# For now, we'll use a clean, responsive CSS layout.
-
-        html_content = f"""<!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes">
-                            <title>SG Haze Tracker</title>
-                            <style>
-                                :root {{
-                                    --bg-color: #f8f9fa;
-                                    --card-bg: #ffffff;
-                                    --text-main: #1a1a1a;
-                                    --text-muted: #6c757d;
-                                    --accent: #007bff;
-                                }}
-                                @media (prefers-color-scheme: dark) {{
-                                    :root {{
-                                        --bg-color: #121212;
-                                        --card-bg: #1e1e1e;
-                                        --text-main: #e9ecef;
-                                        --text-muted: #a0a0a0;
-                                    }}
-                                }}
-                                body {{ 
-                                    font-family: -apple-system, system-ui, sans-serif; 
-                                    background: var(--bg-color); 
-                                    color: var(--text-main);
-                                    margin: 0; padding: 0; 
-                                    line-height: 1.5;
-                                }}
-                                .header {{
-                                    background: var(--card-bg);
-                                    padding: 16px;
-                                    position: sticky;
-                                    top: 0;
-                                    z-index: 100;
-                                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                                    border-bottom: 1px solid rgba(0,0,0,0.1);
-                                }}
-                                h1 {{ font-size: 1.25rem; margin: 0; font-weight: 700; letter-spacing: -0.5px; }}
-                                .status-pill {{
-                                    display: inline-block;
-                                    padding: 4px 12px;
-                                    border-radius: 20px;
-                                    background: #e7f3ff;
-                                    color: #007bff;
-                                    font-size: 0.75rem;
-                                    font-weight: 600;
-                                    margin-top: 8px;
-                                }}
-                                .container {{ max-width: 800px; margin: 0 auto; padding: 10px; }}
-                                .img-card {{ 
-                                    background: var(--card-bg); 
-                                    border-radius: 16px; 
-                                    overflow: hidden; 
-                                    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-                                    margin-top: 10px;
-                                }}
-                                img {{ width: 100%; height: auto; display: block; }}
-                                .footer {{ 
-                                    padding: 30px 20px; 
-                                    font-size: 0.75rem; 
-                                    color: var(--text-muted); 
-                                    text-align: center; 
-                                }}
-                                .legend-bar {{
-                                    display: flex;
-                                    justify-content: space-between;
-                                    margin-top: 12px;
-                                    font-size: 0.7rem;
-                                    font-weight: 500;
-                                }}
-                                .dot {{ height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }}
-                            </style>
-                        </head>
-                        <body>
-                            <div class="header">
-                                <h1>🇸🇬 PM2.5 Hourly Tracker</h1>
-                                <div class="legend-bar">
-                                    {legend_html}
-                                </div>
-                            </div>
-                        
-                            <div class="container">
-                                <div class="img-card">
-                                    <img src="{image_filename}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap">
-                                </div>
-                                
-                                <div class="footer">
-                                    <strong>Data Source:</strong> National Environment Agency<br>
-                                    <strong>Last Sync:</strong> {last_updated}<br>
-                                    <p style="opacity: 0.6">Vertical view displays 7 days of historical trends.</p>
-                                </div>
-                            </div>
-                        </body>
-                        </html>
-                        """
-        
-        try:
-            with open(output_path, "w", encoding='utf-8') as f:
-                f.write(html_content)
-            logger.info(f"HTML page saved to: {output_path}")
-        except IOError as e:
-            logger.error(f"Failed to write HTML file: {e}")
-            raise
-
+        with open(output_path, "w", encoding='utf-8') as f:
+            f.write(html_template)
 
 def main():
-    """Main entry point for the haze script."""
-    logger.info("=" * 60)
-    logger.info("Starting SG PM2.5 Haze Heatmap Generator")
-    logger.info("=" * 60)
+    config = Config()
+    fetcher = DatabaseFetcher(config)
+    generator = HeatmapGenerator(config)
     
     try:
-        # Initialize components
-        config = Config()
-        fetcher = PM25DataFetcher(config)
-        processor = DataProcessor(config)
-        heatmap_gen = HeatmapGenerator(config)
-        
-        # Fetch data
-        api_response = fetcher.fetch_all_data()
-        
-        # Process data
-        df = processor.process_raw_data(api_response.historical_data)
-        
+        # 1. Get Data
+        df = fetcher.fetch_data()
         if df.empty:
-            logger.error("No data available after processing. Exiting.")
             return 1
+            
+        # 2. Render Heatmap
+        success = generator.generate(df)
         
-        # Generate heatmap
-        image_filename = f"{config.output_image_prefix}_{config.days_to_fetch}d.png"
-        success = heatmap_gen.generate_vertical_heatmap(
-            df=df,
-            anchor_time=api_response.anchor_time,
-            days=config.days_to_fetch,
-            filename=image_filename
-        )
-        
-        if not success:
-            logger.error("Failed to generate heatmap")
-            return 1
-        
-        # Generate HTML page
-        HTMLGenerator.generate_html(
-            image_filename=image_filename,
-            last_updated=api_response.last_updated_str,
-            output_path=config.output_html_file
-        )
-        
-        logger.info("=" * 60)
-        logger.info("Successfully completed all tasks!")
-        logger.info("=" * 60)
-        return 0
-        
+        # 3. Update HTML
+        if success:
+            last_ts = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
+            HTMLGenerator.generate(config.output_image_name, last_ts, config.output_html_file)
+            logger.info("Successfully updated heatmap and index.html")
+            
     except Exception as e:
-        logger.exception(f"Unexpected error occurred: {e}")
+        logger.error(f"Execution failed: {e}")
         return 1
-
+    return 0
 
 if __name__ == "__main__":
     exit(main())
