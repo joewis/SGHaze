@@ -151,52 +151,44 @@ class HTMLGenerator:
     
     @staticmethod
     def generate_html_table(df: pd.DataFrame, regions: list, colormap: LinearSegmentedColormap, vmax: int = 250) -> str:
-        """Generate an HTML table with color-coded cells matching the heatmap."""
-        # Sort data newest to oldest to match heatmap
+        """Generate an HTML table with color-coded cells."""
         df_table = df.sort_values('timestamp', ascending=False).copy()
         
-        # Build table rows
         rows = []
         for _, row in df_table.iterrows():
             timestamp = row['timestamp']
-            #time_label = timestamp.strftime('%a %d, %H:%M')
             time_label = timestamp.strftime('%d %b %Y %H:%M')
-
             
             cells = []
             for region in regions:
-                value = row[region]
-                color = HTMLGenerator.get_color_for_value(value, colormap, vmax)
-                # Use white text for darker colors, black for lighter ones
-                # Check luminance to determine text color
+                val = row[region]
+                color = HTMLGenerator.get_color_for_value(val, colormap, vmax)
+                
+                # Dynamic text color (contrast check)
                 r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
-                luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-                text_color = "#ffffff" if luminance < 0.5 else "#000000"
-                cells.append(f'<td style="background-color: {color}; color: {text_color}; text-align: center; font-weight: bold; padding: 4px 2px; min-width: 40px;">{value:.0f}</td>')
+                lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                txt = "#ffffff" if lum < 0.5 else "#000000"
+                
+                cells.append(f'<td style="background-color: {color}; color: {txt}; font-weight: bold;">{val:.0f}</td>')
             
-            rows.append(f'<tr><td style="font-weight: normal; padding: 4px; white-space: nowrap; font-size: 0.75rem;">{time_label}</td>' + ''.join(cells) + '</tr>')
+            rows.append(f'<tr><td>{time_label}</td>' + ''.join(cells) + '</tr>')
         
-        # Build header row
-        header_cells = [f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.75rem;">Time</th>']
-        for region in regions:
-            header_cells.append(f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.75rem;">{region.capitalize()}</th>')
+        header_cells = ['<th>Time</th>'] + [f'<th>{r.capitalize()}</th>' for r in regions]
         header_row = '<tr>' + ''.join(header_cells) + '</tr>'
         
-        table_html = f'''
+        return f'''
         <div class="table-container">
             <table class="data-table">
                 <thead>{header_row}</thead>
-                <tbody>{''.join(rows)}</tbody>
+                <tbody>{"".join(rows)}</tbody>
             </table>
         </div>
         '''
-        return table_html
-    
+
     @staticmethod
     def generate(image_path: str, last_ts_str: str, output_path: str, df: pd.DataFrame = None, regions: list = None, colormap: LinearSegmentedColormap = None, vmax: int = 250):
-        # Generate the data table if dataframe is provided
         table_html = ""
-        if df is not None and regions is not None and colormap is not None and not df.empty:
+        if df is not None and not df.empty:
             table_html = HTMLGenerator.generate_html_table(df, regions, colormap, vmax)
         
         html_template = f"""
@@ -206,50 +198,23 @@ class HTMLGenerator:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>SG PM2.5 Haze Heatmap</title>
-            <style>
-                body {{ font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
-                .card {{ background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; max-width: 1000px; width: 100%; }}
-                h1 {{ font-size: 1.5rem; margin-top: 0; color: #1c1e21; text-align: center; }}
-                h2 {{ font-size: 1.2rem; margin-top: 20px; color: #1c1e21; text-align: center; }}
-                img {{ width: 100%; height: auto; border-radius: 4px; }}
-                .meta {{ margin-top: 15px; font-size: 0.85rem; color: #65676b; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }}
-                .legend {{ display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 0.8rem; font-weight: 600; flex-wrap: wrap; }}
-                .item {{ display: flex; align-items: center; gap: 5px; }}
-                .dot {{ height: 10px; width: 10px; border-radius: 50%; }}
-                .table-container {{ margin-top: 20px; overflow-x: auto; max-height: 70vh; overflow-y: auto; }}
-                .data-table {{ border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 0.9rem; table-layout: fixed; }}
-                .data-table th, .data-table td {{ padding: 4px; text-align: center; font-weight: bold; }}
-                .data-table th:first-child, .data-table td:first-child {{ text-align: left; white-space: nowrap; font-size: 0.75rem; width: 110px; }}
-                .data-table thead th {{ position: sticky; top: 0; z-index: 10; background-color: #333; color: white; }}
-                .footer-fixed {{ position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #eee; padding: 10px; font-size: 0.85rem; color: #65676b; text-align: center; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }}
-                @media (max-width: 600px) {{
-                    .card {{ padding: 10px; }}
-                    h1 {{ font-size: 1.2rem; }}
-                    h2 {{ font-size: 1rem; }}
-                    .legend {{ gap: 10px; font-size: 0.7rem; }}
-                    .data-table {{ font-size: 0.75rem; }}
-                    .data-table th, .data-table td {{ padding: 3px 1px; min-width: 35px; }}
-                    .data-table th:first-child, .data-table td:first-child {{ width: 90px; font-size: 0.65rem; }}
-                }}
-            </style>
+            <link rel="stylesheet" href="style.css">
         </head>
         <body>
             <div class="card">
-                <h1>🇸🇬 SG Haze Heatmap</h1>
+                <h1>🇸🇬 SG Haze Tracker</h1>
                 <div class="legend">
                     <div class="item"><div class="dot" style="background:#228B22"></div>Good</div>
                     <div class="item"><div class="dot" style="background:#FFFF00"></div>Moderate</div>
                     <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
                     <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
                 </div>
-                <!--img src="{image_path}?t={int(datetime.now().timestamp())}" alt="PM2.5 Heatmap"-->
-                <!--h2>📊 Data Table</h2-->
                 {table_html}
             </div>
             <div class="footer-fixed">
-                <strong>Source:</strong> data.gov.sg API<br>
+                <strong>Source:</strong> data.gov.sg API | 
                 <strong>Data Freshness:</strong> {last_ts_str} (SGT)<br>
-                Generated via GitHub Actions
+                Rendered on Lenovo X230 via GitHub Actions
             </div>
         </body>
         </html>
