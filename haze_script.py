@@ -205,7 +205,7 @@ class HTMLGenerator:
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>SG PM2.5 Tracker</title>
+            <title>SG PM2.5 Haze Heatmap</title>
             <style>
                 body {{ font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }}
                 .card {{ background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; max-width: 1000px; width: 100%; }}
