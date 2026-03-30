@@ -196,7 +196,7 @@ class HTMLGenerator:
     
 
     @staticmethod
-    def generate(image_path: str, last_ts_str: str, output_path: str, df: pd.DataFrame = None, regions: list = None, colormap: LinearSegmentedColormap = None, vmax: int = 250):
+    def generate(last_ts_str: str, output_path: str, df: pd.DataFrame = None, regions: list = None, colormap: LinearSegmentedColormap = None, vmax: int = 250):
         # Generate the data table if dataframe is provided
         table_html = ""
         if df is not None and regions is not None and colormap is not None and not df.empty:
@@ -256,7 +256,6 @@ def main():
         # 3. Update HTML
         last_ts = fetcher.fetch_freshness_from_db()
         HTMLGenerator.generate(
-            config.output_image_name, 
             last_ts, 
             config.output_html_file,
             df=df,
