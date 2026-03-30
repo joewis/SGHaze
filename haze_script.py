@@ -6,36 +6,21 @@ generates a vertical heatmap, and creates an HTML page for visualization.
 It is designed to run via GitHub Actions.
 """
 
-
-
 import logging
-
 import sqlite3
-
 from dataclasses import dataclass
-
 from datetime import datetime, timedelta
-
 from pathlib import Path
-
 from typing import Optional
-
-
-
 import pandas as pd
-
 from matplotlib.colors import LinearSegmentedColormap
 
 
 
 # --- Logging Configuration ---
-
 logging.basicConfig(
-
     level=logging.INFO,
-
     format='%(asctime)s - %(levelname)s - %(message)s'
-
 )
 
 logger = logging.getLogger(__name__)
@@ -43,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-
 class Config:
     """Configuration parameters for the haze script."""
     base_dir: Path = Path(__file__).parent
