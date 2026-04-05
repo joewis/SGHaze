@@ -119,7 +119,7 @@ class HTMLGenerator:
             for region in regions:
                 value = row[region]
                 cells.append(f'<td class="pm25-val" style="text-align: center; font-weight: bold; padding: 4px 2px; min-width: 40px;">{value:.0f}</td>')
-            rows.append(f'<tr><td style="font-weight: normal; padding: 4px; white-space: nowrap; font-size: 0.75rem;">{time_label}</td>' + ''.join(cells) + '</tr>')
+            rows.append(f'<tr><td style="font-weight: 500; white-space: nowrap; font-size: 0.75rem;">{time_label}</td>' + ''.join(cells) + '</tr>')
 
         # Build header row
         header_cells = [f'<th style="padding: 8px; background-color: #333; color: white; font-size: 0.75rem;">Time</th>']
