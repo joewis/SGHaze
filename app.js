@@ -46,7 +46,7 @@ function updateTableWithLatest(apiResponse, regions) {
     if (firstRowTime === timeLabel) return;
 
     const newRow = document.createElement("tr");
-    let cellsHTML = `<td style="font-size: 0.75rem; color: #3498db; font-weight: bold;">${timeLabel} (Live)</td>`;
+    let cellsHTML = `<td style="font-size: 0.75rem; color: #3498db; font-weight: bold;">${timeLabel}</td>`;
     
     regions.forEach(region => {
         const val = readings[region];
