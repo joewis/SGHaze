@@ -38,7 +38,7 @@ class Config:
     db_path: Path = BASE_DIR / "sg_haze.db"
     days_to_plot: int = 7*16  # Number of days to show in the heatmap
     regions: list = None
-    output_html_file: str = "index.html"
+    output_html_file: str = "index_old.html"
 
     def __post_init__(self):
         if self.regions is None:
