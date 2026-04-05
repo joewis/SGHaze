@@ -14,14 +14,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (apiRes.ok) {
             const apiData = await apiRes.json();
             
-            // Task 1: Add the live data row to the table
-            updateTableWithLatest(apiData, REGIONS);
+            // Task 1: Fill in missing hours
+            fillMissingData(apiData, REGIONS);
             
-            // Task 2: Update the data freshness in the footer
+            // Task 2: Update footer freshness
             updateFooterFreshness(apiData);
         }
 
-        // Task 3: Apply the color coding
+        // Task 3: Apply colors
         applyHeatmapColors(colorMap);
 
     } catch (error) {
@@ -30,45 +30,57 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /**
- * Prepends the latest 1-hour PM2.5 readings to the table
+ * Inserts missing hourly slots without adding extra text labels
  */
-function updateTableWithLatest(apiResponse, regions) {
-    const item = apiResponse.data.items[0];
-    const readings = item.readings.pm25_one_hourly;
-    const timestamp = new Date(item.timestamp);
-    const timeLabel = formatTimestamp(timestamp);
-
+function fillMissingData(apiResponse, regions) {
     const tableBody = document.querySelector(".data-table tbody");
     if (!tableBody) return;
 
-    // Avoid duplicating if the first row is already this timestamp
-    const firstRowTime = tableBody.querySelector("tr td")?.textContent;
-    if (firstRowTime === timeLabel) return;
+    // 1. Get the timestamp of the newest row already in the table
+    const firstRowTimeStr = tableBody.querySelector("tr td")?.textContent;
+    const latestTableTime = firstRowTimeStr ? new Date(firstRowTimeStr).getTime() : 0;
 
-    const newRow = document.createElement("tr");
-    let cellsHTML = `<td style="font-size: 0.75rem; color: #3498db; font-weight: bold;">${timeLabel}</td>`;
-    
-    regions.forEach(region => {
-        const val = readings[region];
-        cellsHTML += `<td class="pm25-val" style="text-align: center; font-weight: bold; padding: 4px 2px; min-width: 40px;">${val}</td>`;
+    // 2. Filter and sort missing items (oldest to newest for correct prepending)
+    const missingItems = apiResponse.data.items
+        .filter(item => new Date(item.timestamp).getTime() > latestTableTime)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    if (missingItems.length === 0) return;
+
+    // 3. Prepend rows
+    missingItems.forEach(item => {
+        const timestamp = new Date(item.timestamp);
+        const timeLabel = formatTimestamp(timestamp);
+        const readings = item.readings.pm25_one_hourly;
+
+        const newRow = document.createElement("tr");
+        
+        // Removed "(Live)" - using a subtle blue color for the timestamp instead
+        let cellsHTML = `<td style="font-size: 0.75rem; color: #3498db; font-weight: 500;">${timeLabel}</td>`;
+        
+        regions.forEach(region => {
+            const val = readings[region];
+            cellsHTML += `<td class="pm25-val" style="text-align: center; font-weight: bold; padding: 4px 2px; min-width: 40px;">${val}</td>`;
+        });
+
+        newRow.innerHTML = cellsHTML;
+        tableBody.insertBefore(newRow, tableBody.firstChild);
     });
-
-    newRow.innerHTML = cellsHTML;
-    tableBody.insertBefore(newRow, tableBody.firstChild);
 }
 
 /**
- * Updates the "Data Freshness" field in the footer using the API's updatedTimestamp
+ * Updates the footer using the latest updatedTimestamp from the API
  */
 function updateFooterFreshness(apiResponse) {
-    const item = apiResponse.data.items[0];
-    const updatedTs = new Date(item.updatedTimestamp);
+    // API items are usually chronological; get the last one for the most recent update
+    const items = apiResponse.data.items;
+    const latestItem = items[items.length - 1];
+    const updatedTs = new Date(latestItem.updatedTimestamp);
     const freshnessLabel = formatTimestamp(updatedTs);
     
     const footer = document.querySelector(".footer-fixed");
     if (!footer) return;
 
-    // Updates only the text between "Data Freshness:" and "(SGT)"
     footer.innerHTML = footer.innerHTML.replace(
         /<strong>Data Freshness:<\/strong> .*? \(SGT\)/,
         `<strong>Data Freshness:</strong> ${freshnessLabel} (SGT)`
@@ -76,7 +88,7 @@ function updateFooterFreshness(apiResponse) {
 }
 
 /**
- * Applies background and text colors based on the JSON lookup table
+ * Standard color-coding logic
  */
 function applyHeatmapColors(colorMap) {
     const dataCells = document.querySelectorAll('.pm25-val');
@@ -92,9 +104,6 @@ function applyHeatmapColors(colorMap) {
     });
 }
 
-/**
- * Helper: Format Date to "DD MMM YYYY HH:mm"
- */
 function formatTimestamp(date) {
     return date.toLocaleString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
@@ -102,9 +111,6 @@ function formatTimestamp(date) {
     }).replace(',', '');
 }
 
-/**
- * Helper: Determine if text should be black or white based on background brightness
- */
 function getContrastTextColor(hex) {
     hex = hex.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
