@@ -50,7 +50,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
 
           # Add all assets
-          git add -f style.css index.html sg_haze.db
+          git add -f style.css index.html sg_haze.db app.js pm25_map.json
 
           # Check if there are actual changes before proceeding
           if git diff --cached --quiet; then
