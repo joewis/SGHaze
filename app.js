@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const API_URL = "https://api-open.data.gov.sg/v2/real-time/api/pm25";
     const REGIONS = ['west', 'north', 'central', 'south', 'east'];
-    const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const REFRESH_INTERVAL = 5 * 60 * 1000; // 15 minutes in milliseconds
 
     // Initial load of the color map (static, only needed once)
     let colorMap = {};
