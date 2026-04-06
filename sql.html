@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>sql.js Hello World</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.min.js"></script>
+</head>
+<body>
+    <h1>SG Haze Data</h1>
+    <div id="output">Loading database...</div>
+
+    <script>
+        async function runQuery() {
+            const output = document.getElementById('output');
+            
+            try {
+                // 1. Initialize sql.js
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+                });
+
+                // 2. Fetch your database file
+                // Replace 'sg_haze.db' with the actual path to your file
+                const response = await fetch('sg_haze.db');
+                const buf = await response.arrayBuffer();
+                
+                // 3. Load the database into memory
+                const db = new SQL.Database(new Uint8Array(buf));
+
+                // 4. Execute a simple query on your 'regions' table
+                const contents = db.exec("SELECT * FROM pm25_readings order by timestamp desc LIMIT 100");
+
+                // 5. Display the results
+                if (contents.length > 0) {
+                    const rows = contents[0].values;
+                    output.innerHTML = "<h3>Latest Readings:</h3>" + 
+                        "<table>"+
+			"<tr><th>Time</th><th>West</th><th>North</th><th>Central</th>South<th></th><th>East</th></tr>"+
+			rows.map(row => `<tr><td>${row[0]}:</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td></tr>`).join('') + 
+                        "</table>";
+                } else {
+                    output.innerHTML = "Database loaded, but 'regions' table is empty.";
+                }
+
+            } catch (err) {
+                output.innerHTML = `Error: ${err.message}`;
+            }
+        }
+
+        runQuery();
+    </script>
+</body>
+</html>
