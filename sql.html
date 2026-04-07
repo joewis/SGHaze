@@ -1,20 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>SG Haze Heatmap</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>SG PM2.5 Haze Heatmap (SQL)</title>
+    
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.min.js"></script>
-    <script src="app2.js" defer></script>
+    <script src="app.js" defer></script>
 </head>
 <body>
     <div class="card">
-                <h1>&#x1F1F8;&#x1F1EC; SG Haze Heatmap</h1>
-                <div class="legend">
-                    <div class="item"><div class="dot" style="background:#228B22"></div>Good</div>
-                    <div class="item"><div class="dot" style="background:#FFFF00"></div>Moderate</div>
-                    <div class="item"><div class="dot" style="background:#FF0000"></div>Unhealthy</div>
-                    <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
-                </div>
+        <h1>&#x1F1F8;&#x1F1EC; SG Haze Heatmap</h1>
+        
+        <div class="legend">
+            <div class="item"><div class="dot" style="background:#228B22"></div>Good</div>
+            <div class="item"><div class="dot" style="background:#FFFF00"></div>Moderate</div>
+            <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
+            <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
+        </div>
+
         <div class="table-container">
             <table class="data-table">
                 <thead>
@@ -32,10 +38,11 @@
             </table>
         </div>
     </div>
-    <div class="footer-fixed">
-		<strong>Source:</strong> data.gov.sg API<br>
-		<br>Generated via GitHub Actions
-    </div>
 
+    <div class="footer-fixed">
+        <strong>Source:</strong> data.gov.sg API<br>
+        <strong>Data Freshness:</strong> <span id="freshness">Loading...</span> (SGT)<br>
+        <br>Generated via sql.js In-Memory DB
+    </div>
 </body>
 </html>
