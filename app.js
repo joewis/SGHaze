@@ -129,7 +129,7 @@ function getPagedData(page, size) {
 
             const res = db.exec("SELECT MAX(timestamp) FROM pm25_readings");
             const latestDbTime = res[0].values[0][0] || "";
-            const newItems = apiData.data.items.filter(item => item.timestamp => latestDbTime);
+            const newItems = apiData.data.items.filter(item => item.timestamp >= latestDbTime);
 
             if (newItems.length > 0) {
                 const stmt = db.prepare("INSERT OR IGNORE INTO pm25_readings (timestamp, west, north, central, south, east) VALUES (?, ?, ?, ?, ?, ?)");
