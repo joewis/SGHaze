@@ -153,3 +153,55 @@ img {
         font-size: 0.65rem;
     }
 }
+
+/* Ensure the Tabulator container doesn't force a horizontal scroll */
+.tabulator {
+    font-size: 0.75rem !important; /* Slightly smaller for better fit */
+    border: none !important;
+}
+
+.tabulator-cell {
+    padding: 4px 2px !important; /* Tighten up the cells */
+}
+
+/* 1. Hide the arrow container for all devices */
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 4px 2px !important;
+}
+
+
+/* 3. Force the sort icon to hide even if it's nested deep in mobile themes */
+[class^="tabulator-arrow"] {
+    display: none !important;
+}
+
+
+/* 2. Prevent the header text from truncating with ellipsis */
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
+    text-overflow: clip !important;
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+/* 3. Ensure the table container allows the full width to be used */
+.table-container {
+    width: 100%;
+    margin-top: 20px;
+    overflow-x: auto; /* Keep this for smaller mobile screens */
+}
+
+/* Ensure the Tabulator element itself controls the scroll */
+#haze-table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Remove the max-height from the container so it doesn't conflict */
+.table-container {
+    max-height: none !important;
+    overflow: visible !imporstant;
+}
+
