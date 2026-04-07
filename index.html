@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>SG PM2.5 Haze Heatmap (SQL)</title>
+    <title>SG PM2.5 Haze Heatmap (Tabulator)</title>
     
     <link rel="stylesheet" href="styles.css">
+    <link href="https://unpkg.com/tabulator-tables@6.4.0/dist/css/tabulator.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.4.0/dist/js/tabulator.min.js"></script>
     <script src="app.js" defer></script>
 </head>
 <body>
@@ -22,27 +24,14 @@
         </div>
 
         <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>West</th>
-                        <th>North</th>
-                        <th>Central</th>
-                        <th>South</th>
-                        <th>East</th>
-                    </tr>
-                </thead>
-                <tbody id="sql-output">
-                    </tbody>
-            </table>
+            <div id="haze-table"></div>
         </div>
     </div>
 
     <div class="footer-fixed">
         <strong>Source:</strong> data.gov.sg API<br>
-        <strong>Data Freshness:</strong> <span id="freshness">Loading...</span> (SGT)<br>
-        <br>Generated via sql.js In-Memory DB
+        Generated via sql.js & Tabulator
     </div>
 </body>
 </html>
+           
