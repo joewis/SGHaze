@@ -36,7 +36,7 @@ class Config:
     """Configuration parameters for the haze script."""
     base_dir: Path = BASE_DIR
     db_path: Path = BASE_DIR / "sg_haze.db"
-    days_to_plot: int = 7*16  # Number of days to show in the heatmap
+    days_to_plot: int = 2  # Number of days to show in the heatmap
     regions: list = None
     output_html_file: str = "index.html"
 
