@@ -71,21 +71,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         const now = new Date();
         const minutes = now.getMinutes();
         const seconds = now.getSeconds();
-
-        // Find the next target minute
-        const targets = [2, 17, 32, 47]; 
-        const nextTarget = targets.find(t => t > minutes);
-        
-        let diffMinutes = nextTarget - minutes;
-        // Calculate total milliseconds until target
-        const delay = (diffMinutes * 60 - seconds) * 1000;
-
-        console.log(`Next update scheduled in ${Math.round(delay/1000/60)} minutes.`);
-
+    
+        // Targets: 2, 17, 32, 47
+        const targets = [2, 17, 32, 47];
+        let nextTarget = targets.find(t => t > minutes);
+    
+        let delay;
+        if (nextTarget === undefined) {
+            // If it's past 47 minutes, target is 02 minutes of the NEXT hour
+            delay = ((60 - minutes + 2) * 60 - seconds) * 1000;
+        } else {
+            delay = ((nextTarget - minutes) * 60 - seconds) * 1000;
+        }
+    
+        // Safety: Never allow a delay shorter than 60 seconds
+        const safeDelay = Math.max(delay, 60000);
+    
+        console.log(`Next sync in ${Math.floor(safeDelay / 1000)}s`);
+    
         setTimeout(async () => {
             await syncAndRender();
-            scheduleNextUpdate(); // Loop the scheduler
-        }, delay);
+            scheduleNextUpdate(); // Only call again AFTER sync finishes
+        }, safeDelay);
     }
 
     function renderData() {
