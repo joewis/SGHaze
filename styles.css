@@ -175,6 +175,11 @@ img {
     padding: 4px 2px !important; /* Tighten up the cells */
 }
 
+/* Adjust table header font size for better fit */
+.tabulator .tabulator-header .tabulator-col {
+    font-size: 0.75rem !important;
+}
+
 /* 1. Hide the arrow container for all devices */
 .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter {
     display: none !important;

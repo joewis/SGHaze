@@ -1,1 +1,1 @@
-(swiper-layout.js is just a source file, and index.html/styles.css are also source files, so no build artifacts, dependencies, or temp files to ignore)
+Nothing should be ignored since only source files (.js, .html, .css) were modified and no build artifacts, dependencies, or temp files are present in the changes.
