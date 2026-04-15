@@ -45,7 +45,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 table = new Tabulator("#haze-table", {
         height: "70vh",
         layout: "fitColumns",
-	resizableColumnFit: true,
+        layoutColumnsOnNewData: true,
+        resizableColumnFit: true,
         placeholder: "Loading Data...",
         ajaxURL: "local", // A dummy URL is required to wake up the AJAX engine
         ajaxRequestFunc: function(url, config, params) {
@@ -71,15 +72,16 @@ table = new Tabulator("#haze-table", {
             {
                 title: "Time",
                 field: "timestamp",
-		width: 125,
+                width: 100,
+                minWidth: 80,
                 headerSort: true,
                 formatter: (cell) => formatTimestamp(new Date(cell.getValue()))
             },
-            { title: "West", field: "west", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false },
-            { title: "North", field: "north", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false },
-            { title: "Central", field: "central", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false },
-            { title: "South", field: "south", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false },
-            { title: "East", field: "east", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false },
+            { title: "West", field: "west", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false, widthGrow: 1 },
+            { title: "North", field: "north", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false, widthGrow: 1 },
+            { title: "Central", field: "central", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false, widthGrow: 1 },
+            { title: "South", field: "south", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false, widthGrow: 1 },
+            { title: "East", field: "east", headerSort: true, formatter: pm25Formatter, hozAlign: "center", resizable: false, widthGrow: 1 },
         ],
     });
 }
