@@ -6,26 +6,56 @@
     
     <title>SG PM2.5 Haze Heatmap (Tabulator)</title>
     
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <link rel="stylesheet" href="styles.css">
     <link href="https://unpkg.com/tabulator-tables@6.4.0/dist/css/tabulator.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.4.0/dist/js/tabulator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="app.js" defer></script>
+    <script src="swiper-layout.js" defer></script>
 </head>
 <body>
-    <div class="card">
-        <h1>&#x1F1F8;&#x1F1EC; SG Haze Heatmap</h1>
-        
-        <div class="legend">
-            <div class="item"><div class="dot" style="background:#228B22"></div>Good</div>
-            <div class="item"><div class="dot" style="background:#FFFF00"></div>Moderate</div>
-            <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
-            <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
-        </div>
+    <!-- Swiper Container -->
+    <div class="swiper mySwiper">
+        <div class="swiper-wrapper">
+            <!-- Card 1: PM2.5 Table -->
+            <div class="swiper-slide">
+                <div class="card">
+                    <h1>&#x1F1F8;&#x1F1EC; SG Haze Heatmap</h1>
+                    
+                    <div class="legend">
+                        <div class="item"><div class="dot" style="background:#228B22"></div>Good</div>
+                        <div class="item"><div class="dot" style="background:#FFFF00"></div>Moderate</div>
+                        <div class="item"><div class="dot" style="background:#FF8800"></div>Unhealthy</div>
+                        <div class="item"><div class="dot" style="background:#800080"></div>Hazardous</div>
+                    </div>
 
-        <div class="table-container">
-            <div id="haze-table"></div>
+                    <div class="table-container">
+                        <div id="haze-table"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card 2: Info Card -->
+            <div class="swiper-slide">
+                <div class="card">
+                    <h1>About This Dashboard</h1>
+                    <p>This dashboard displays real-time PM2.5 readings across Singapore.</p>
+                    <p><strong>Data Source:</strong> data.gov.sg API</p>
+                    <p><strong>Technology:</strong> sql.js & Tabulator</p>
+                    <p>Swipe left or right to navigate between cards.</p>
+                </div>
+            </div>
         </div>
+        
+        <!-- Pagination -->
+        <div class="swiper-pagination"></div>
+        
+        <!-- Navigation Arrows -->
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
     </div>
 
     <div class="footer-fixed">

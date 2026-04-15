@@ -10,6 +10,17 @@ body {
     align-items: center;
 }
 
+/* Swiper container styling */
+.swiper {
+    width: 100%;
+    max-width: 1000px;
+    padding-bottom: 40px; /* Space for pagination */
+}
+
+.swiper-slide {
+    height: auto;
+}
+
 .card {
     background: white;
     border-radius: 12px;
