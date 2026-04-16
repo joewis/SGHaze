@@ -2,7 +2,7 @@
 
 A lightweight, real-time dashboard for tracking and visualizing Singapore's air quality (PM2.5 levels) using data from [data.gov.sg](https://data.gov.sg).
 
-**🌐 Live Dashboard:** [View Website](https://yourusername.github.io/sg-haze-tracker/) *(replace with your actual GitHub Pages URL)*
+**🌐 Live Dashboard:** [View Website](https://joewis.github.io/SGHaze/) *(replace with your actual GitHub Pages URL)*
 
 ## Overview
 
