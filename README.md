@@ -68,8 +68,8 @@ The entire pipeline runs automatically via **GitHub Actions**, with results publ
 
 ```bash
 # Clone the repository
-git clone https://github.com/joewis/SGHAZE.git
-cd sg-haze-tracker
+git clone https://github.com/joewis/SGHaze.git
+cd SGHaze
 
 # Install dependencies
 pip install -r requirements.txt
