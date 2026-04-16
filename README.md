@@ -1,10 +1,12 @@
 # 🇸🇬 Singapore PM2.5 Haze Tracker
 
-A lightweight, automated system for tracking and visualizing Singapore's air quality (PM2.5 levels) using data from [data.gov.sg](https://data.gov.sg).
+A lightweight, real-time dashboard for tracking and visualizing Singapore's air quality (PM2.5 levels) using data from [data.gov.sg](https://data.gov.sg).
+
+**🌐 Live Dashboard:** [View Website](https://yourusername.github.io/sg-haze-tracker/) *(replace with your actual GitHub Pages URL)*
 
 ## Overview
 
-This project fetches hourly PM2.5 readings from Singapore's National Environment Agency (NEA) via the [data.gov.sg API](https://api-open.data.gov.sg/v2/real-time/api/pm25), stores them in a local SQLite database, and generates a color-coded heatmap visualization showing pollution trends across five regions over the past 7 days.
+This project fetches hourly PM2.5 readings from Singapore's National Environment Agency (NEA) via the [data.gov.sg API](https://api-open.data.gov.sg/v2/real-time/api/pm25), stores them in a local SQLite database, and displays them in an interactive web dashboard using **sql.js** and **Tabulator**. The dashboard features a swipeable card layout powered by **Swiper**.
 
 The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, with results published to **GitHub Pages**.
 
@@ -12,18 +14,24 @@ The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, 
 
 - **Automated Data Collection**: Sync with data.gov.sg API every 15 minutes
 - **Historical Database**: SQLite storage for trend analysis
-- **Visual Heatmap**: Color-coded PM2.5 levels by region (West, North, Central, South, East)
-- **Web Dashboard**: Clean HTML page hosted on GitHub Pages
+- **Interactive Web Dashboard**: 
+  - Real-time PM2.5 table view with Tabulator
+  - Swipeable card interface using Swiper.js
+  - Color-coded PM2.5 levels by region (West, North, Central, South, East)
+  - Mobile-friendly responsive design
+- **Client-Side Processing**: Uses sql.js to read SQLite database directly in the browser
 - **Lightweight**: Designed to run efficiently on minimal infrastructure
 
 ## Project Structure
 
 ```
 ├── fetch_pm25.py       # Data fetching script - pulls PM2.5 data from API
-├── haze_script.py      # Visualization script - generates heatmap & HTML
+├── haze_script.py      # Database & HTML generation script
 ├── sg_haze.db          # SQLite database with historical readings
-├── haze_latest.png     # Generated heatmap image
 ├── index.html          # Web dashboard (GitHub Pages)
+├── app.js              # Client-side logic for loading DB and rendering table
+├── swiper-layout.js    # Swiper carousel configuration
+├── styles.css          # Dashboard styling
 ├── requirements.txt    # Python dependencies
 └── .github/workflows/  # GitHub Actions CI/CD configuration
 ```
@@ -36,20 +44,24 @@ The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, 
 - Stores readings in `sg_haze.db` with columns for each region
 - Implements rate limiting to respect API quotas
 
-### 2. Visualization (`haze_script.py`)
-- Reads the latest 7 days of data from the database
-- Generates a vertical heatmap using Seaborn/Matplotlib
+### 2. Database & HTML Generation (`haze_script.py`)
+- Reads the latest data from the API
+- Updates the SQLite database with new readings
+- Generates/updates `index.html` with fresh data and timestamp
+
+### 3. Client-Side Dashboard (`app.js`, `swiper-layout.js`)
+- **sql.js**: Loads and queries the SQLite database directly in the browser
+- **Tabulator**: Renders an interactive, sortable table of PM2.5 readings
+- **Swiper.js**: Provides swipeable card navigation for mobile-friendly UX
 - Color coding follows NEA PSI standards:
   - 🟢 **Good**: 0-12 µg/m³
   - 🟡 **Moderate**: 12-35 µg/m³
   - 🟠 **Unhealthy**: 35-150 µg/m³
-  - 🔴 **Very Unhealthy**: 150-250 µg/m³
-  - 🟣 **Hazardous**: 250+ µg/m³
-- Updates `index.html` with fresh data and timestamp
+  - 🟣 **Hazardous**: 150+ µg/m³
 
-### 3. Automation (GitHub Actions)
+### 4. Automation (GitHub Actions)
 - Runs every 15 minutes via cron schedule (`*/15 * * * *`)
-- Commits updated assets (PNG, DB, HTML) to the `main` branch
+- Commits updated assets (DB, HTML) to the `main` branch
 - Triggers GitHub Pages rebuild for live updates
 
 ## Installation & Local Usage
@@ -75,25 +87,19 @@ pip install -r requirements.txt
 # Step 1: Fetch latest data from API
 python fetch_pm25.py
 
-# Step 2: Generate heatmap and HTML
+# Step 2: Generate database and HTML
 python haze_script.py
+
+# Step 3: Serve locally (optional, for testing)
+# Use any static file server, e.g.:
+python -m http.server 8000
 ```
 
-Open `index.html` in your browser to view the dashboard.
+Open `http://localhost:8000` in your browser to view the dashboard.
 
 ## Configuration
 
-Edit `haze_script.py` to customize:
-
-```python
-@dataclass
-class Config:
-    days_to_plot: int = 7           # Number of days in heatmap
-    vmax_pm25: int = 250            # Max color scale value
-    row_height_inches: float = 0.25 # Heatmap row height
-    figure_width_inches: float = 11.0
-    dpi: int = 120
-```
+Edit `haze_script.py` to customize data processing and output settings.
 
 ## Data Source
 
@@ -108,4 +114,4 @@ MIT License - feel free to use and modify.
 ## Acknowledgments
 
 - Data provided by [National Environment Agency (NEA)](https://www.nea.gov.sg) via [data.gov.sg](https://data.gov.sg)
-- Built with Python, Pandas, Seaborn, and Matplotlib
+- Built with Python, Pandas, sql.js, Tabulator, and Swiper.js
