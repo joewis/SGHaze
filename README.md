@@ -26,7 +26,6 @@ The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, 
 
 ```
 ├── fetch_pm25.py       # Data fetching script - pulls PM2.5 data from API
-├── haze_script.py      # Database & HTML generation script
 ├── sg_haze.db          # SQLite database with historical readings
 ├── index.html          # Web dashboard (GitHub Pages)
 ├── app.js              # Client-side logic for loading DB and rendering table
@@ -44,12 +43,7 @@ The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, 
 - Stores readings in `sg_haze.db` with columns for each region
 - Implements rate limiting to respect API quotas
 
-### 2. Database & HTML Generation (`haze_script.py`)
-- Reads the latest data from the API
-- Updates the SQLite database with new readings
-- Generates/updates `index.html` with fresh data and timestamp
-
-### 3. Client-Side Dashboard (`app.js`, `swiper-layout.js`)
+### 2. Client-Side Dashboard (`app.js`, `swiper-layout.js`)
 - **sql.js**: Loads and queries the SQLite database directly in the browser
 - **Tabulator**: Renders an interactive, sortable table of PM2.5 readings
 - **Swiper.js**: Provides swipeable card navigation for mobile-friendly UX
@@ -60,8 +54,8 @@ The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, 
   - 🟣 **Hazardous**: 150+ µg/m³
 
 ### 4. Automation (GitHub Actions)
-- Runs every 15 minutes via cron schedule (`*/15 * * * *`)
-- Commits updated assets (DB, HTML) to the `main` branch
+- Runs hourly via cron schedule
+- Commits updated assets (DB) to the `main` branch
 - Triggers GitHub Pages rebuild for live updates
 
 ## Installation & Local Usage
