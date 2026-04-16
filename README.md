@@ -2,17 +2,17 @@
 
 A lightweight, real-time dashboard for tracking and visualizing Singapore's air quality (PM2.5 levels) using data from [data.gov.sg](https://data.gov.sg).
 
-**🌐 Live Dashboard:** [View Website](https://joewis.github.io/SGHaze/) *(replace with your actual GitHub Pages URL)*
+**🌐 Live Dashboard:** [View Website](https://joewis.github.io/SGHaze/)
 
 ## Overview
 
 This project fetches hourly PM2.5 readings from Singapore's National Environment Agency (NEA) via the [data.gov.sg API](https://api-open.data.gov.sg/v2/real-time/api/pm25), stores them in a local SQLite database, and displays them in an interactive web dashboard using **sql.js** and **Tabulator**. The dashboard features a swipeable card layout powered by **Swiper**.
 
-The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, with results published to **GitHub Pages**.
+The entire pipeline runs automatically via **GitHub Actions**, with results published to **GitHub Pages**.
 
 ## Features
 
-- **Automated Data Collection**: Sync with data.gov.sg API every 15 minutes
+- **Automated Data Collection**: Sync with data.gov.sg API
 - **Historical Database**: SQLite storage for trend analysis
 - **Interactive Web Dashboard**: 
   - Real-time PM2.5 table view with Tabulator
@@ -68,7 +68,7 @@ The entire pipeline runs automatically via **GitHub Actions** every 15 minutes, 
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/sg-haze-tracker.git
+git clone https://github.com/joewis/SGHAZE.git
 cd sg-haze-tracker
 
 # Install dependencies
@@ -81,19 +81,12 @@ pip install -r requirements.txt
 # Step 1: Fetch latest data from API
 python fetch_pm25.py
 
-# Step 2: Generate database and HTML
-python haze_script.py
-
-# Step 3: Serve locally (optional, for testing)
+# Step 2: Serve locally (optional, for testing)
 # Use any static file server, e.g.:
 python -m http.server 8000
 ```
 
 Open `http://localhost:8000` in your browser to view the dashboard.
-
-## Configuration
-
-Edit `haze_script.py` to customize data processing and output settings.
 
 ## Data Source
 
