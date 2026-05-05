@@ -4,7 +4,7 @@ A lightweight, real-time dashboard for tracking and visualizing Singapore's air 
 
 **🌐 Live Dashboard:** [View Website](https://joewis.github.io/SGHaze/)
 
-## Overview
+## Overview 
 
 This project fetches hourly PM2.5 readings from Singapore's National Environment Agency (NEA) via the [data.gov.sg API](https://api-open.data.gov.sg/v2/real-time/api/pm25), stores them in a local SQLite database, and displays them in an interactive web dashboard using **sql.js** and **Tabulator**. The dashboard features a swipeable card layout powered by **Swiper**.
 
